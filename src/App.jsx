@@ -6,14 +6,29 @@ import Clients from "./pages/Clients"
 import Expenses from  "./pages/Expenses"
 import Invoices from "./pages/Invoices"
 
+import ProtectedRoute from "./routes/ProtectedRoutes";
+
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login/>}/>
-      <Route path="/dashboard" element={<Dashboard/>}/>
-      <Route path="/clients" element={<Clients/>}/>
-      <Route path="/expenses" element={<Expenses/>}/>
-      <Route path="/Invoices" element={<Invoices/>}/>
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+        <Dashboard/>
+        </ProtectedRoute>}/>
+      <Route path="/clients" element={
+        <ProtectedRoute>
+        <Clients/>
+        </ProtectedRoute>}/>
+      <Route path="/expenses" element={
+        <ProtectedRoute>
+        <Expenses/>
+        </ProtectedRoute>}/>
+      <Route path="/Invoices" element={
+        <ProtectedRoute>
+        <Invoices/>
+        </ProtectedRoute>
+        }/>
     </Routes>
   );
 }
