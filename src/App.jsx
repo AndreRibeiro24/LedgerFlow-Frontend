@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients"
 import Expenses from  "./pages/Expenses"
 import Invoices from "./pages/Invoices"
-
+import ClientsDetails from "./pages/ClientDetails"
 import ProtectedRoute from "./routes/ProtectedRoutes";
 
 function App() {
@@ -29,7 +29,14 @@ function App() {
         <Invoices/>
         </ProtectedRoute>
         }/>
+      <Route path="/clients/:id" element={
+        <ProtectedRoute>
+        <ClientsDetails/>
+        </ProtectedRoute>
+    }
+    />
     </Routes>
+
   );
 }
 
