@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import Layout from "../components/Layout";
+import ExpensesByCategoryChart from "../components/ExpenseByCategoryChart";
+
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [invoiceStatus, setInvoiceStatus] = useState(null); 
-
+  const [invoiceStatus, setInvoiceStatus] = useState([]); 
+  const [recentInvoices, setRecentInvoiceStatus] = useState([]);
+  const [recentExpenses, setRecentExpenses] = useState([]);
+  const [expensesByCategory, setExpensesByCategory] = useState([]);
   //useEffect
 useEffect(() => {
   const getSummary = async () => {
@@ -26,13 +30,43 @@ useEffect(() => {
       console.error("Get invoice status error:", error);
     }
   };
+  
+  const getRecentInvoices = async()=>{
+    try{
+      const response = await api.get("/dashboard/recent-invoices")
+      setRecentInvoiceStatus(response.data)
+    } catch(error){
+      console.error("Get recent invoices error:", error)
+    }
+  }
 
+  const getRecentExpenses = async()=>{
+    try{
+      const response = await api.get("/dashboard/recent-expenses")
+      setRecentExpenses(response.data)
+    }catch(error){
+      console.error("Get Recent Expenses Error:", error)
+    }
+
+  }
+
+  const getExpensesByCategory = async()=>{
+    try{
+      const response = await api.get("/dashboard/expenses-by-category")
+      setExpensesByCategory(response.data)
+    }catch(error){
+      console.error("Get Expenses by Category Error:", error)
+    }
+  }
   const loadDashboard = async () => {
     setLoading(true);
 
     await Promise.allSettled([
       getSummary(),
       getInvoiceStatus(),
+      getRecentInvoices(),
+      getRecentExpenses(),
+      getExpensesByCategory(),
     ]);
 
     setLoading(false);
@@ -108,7 +142,10 @@ useEffect(() => {
           </div>
         ))}
       </section>
-      {invoiceStatus && (
+
+                                      {/* Invoice Status */}
+
+      {invoiceStatus && (  
   <section className="mt-8">
     <h2 className="text-xl font-bold text-slate-900 mb-4">
       Invoice Status
@@ -141,7 +178,144 @@ useEffect(() => {
       </div>
     </div>
   </section>
+
+  
 )}
+                                                    {/* Recent Invoices */}
+
+    <section className="mt-8">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-xl font-bold text-slate-900">
+      Recent Invoices
+    </h2>
+  </div>
+
+  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    {recentInvoices.length === 0 ? (
+      <p className="p-6 text-slate-500">
+        No recent invoices available.
+      </p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Invoice
+              </th>
+
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Status
+              </th>
+
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Date
+              </th>
+
+              <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
+                Total
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {recentInvoices.map((invoice) => (
+              <tr
+                key={invoice._id}
+                className="border-b border-slate-100 last:border-b-0"
+              >
+                <td className="px-6 py-4 font-medium text-slate-900">
+                  {invoice.invoiceNumber}
+                </td>
+
+                <td className="px-6 py-4 text-slate-600 capitalize">
+                  {invoice.status}
+                </td>
+
+                <td className="px-6 py-4 text-slate-600">
+                  {new Date(invoice.issueDate).toLocaleDateString()}
+                </td>
+
+                <td className="px-6 py-4 text-right font-medium text-slate-900">
+                  {invoice.total.toFixed(2)} €
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</section>
+
+                                              {/* Recent Expenses */}
+
+<section className="mt-8">
+  <h2 className="text-xl font-bold text-slate-900 mb-4">
+    Recent Expenses
+  </h2>
+
+  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    {recentExpenses.length === 0 ? (
+      <p className="p-6 text-slate-500">
+        No recent expenses available.
+      </p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Description
+              </th>
+
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Category
+              </th>
+
+              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
+                Date
+              </th>
+
+              <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
+                Amount
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {recentExpenses.map((expense) => (
+              <tr
+                key={expense._id}
+                className="border-b border-slate-100 last:border-b-0"
+              >
+                <td className="px-6 py-4 font-medium text-slate-900">
+                  {expense.description}
+                </td>
+
+                <td className="px-6 py-4 text-slate-600">
+                  {expense.category}
+                </td>
+
+                <td className="px-6 py-4 text-slate-600">
+                  {new Date(expense.date).toLocaleDateString()}
+                </td>
+
+                <td className="px-6 py-4 text-right font-medium text-slate-900">
+                  {expense.amount.toFixed(2)} €
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</section>
+                                      {/* Expenses By Category Charts */}
+<section className="mt-8">
+  <ExpensesByCategoryChart data={expensesByCategory} />
+</section>
     </Layout>
   );
 }
