@@ -7,6 +7,7 @@ import Expenses from  "./pages/Expenses"
 import Invoices from "./pages/Invoices"
 import ClientsDetails from "./pages/ClientDetails"
 import ProtectedRoute from "./routes/ProtectedRoutes";
+import ExpenseDetails from "./pages/ExpensesDetails";
 
 function App() {
   return (
@@ -35,6 +36,12 @@ function App() {
         </ProtectedRoute>
     }
     />
+      <Route path="/expenses/:id" element={
+      <ProtectedRoute>
+        <ExpenseDetails />
+      </ProtectedRoute>
+    }
+  />
     </Routes>
 
   );
