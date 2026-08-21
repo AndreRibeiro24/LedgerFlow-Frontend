@@ -8,6 +8,7 @@ import Invoices from "./pages/Invoices"
 import ClientsDetails from "./pages/ClientDetails"
 import ProtectedRoute from "./routes/ProtectedRoutes";
 import ExpenseDetails from "./pages/ExpensesDetails";
+import InvoicesDetails from "./pages/InvoicesDetails";
 
 function App() {
   return (
@@ -25,7 +26,7 @@ function App() {
         <ProtectedRoute>
         <Expenses/>
         </ProtectedRoute>}/>
-      <Route path="/Invoices" element={
+      <Route path="/invoices" element={
         <ProtectedRoute>
         <Invoices/>
         </ProtectedRoute>
@@ -42,6 +43,12 @@ function App() {
       </ProtectedRoute>
     }
   />
+    <Route path="/invoices/:id" element={
+      <ProtectedRoute>
+        <InvoicesDetails/>
+      </ProtectedRoute>
+      
+    }/>
     </Routes>
 
   );
