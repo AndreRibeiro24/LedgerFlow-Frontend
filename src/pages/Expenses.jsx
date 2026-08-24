@@ -1,25 +1,34 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
-import Layout from "../components/Layout";
 import { useNavigate } from "react-router-dom";
 
+import api from "../services/api";
+import Layout from "../components/Layout";
+
+const emptyForm = {
+  description: "",
+  amount: "",
+  date: "",
+  category: "",
+  paymentMethod: "",
+  notes: "",
+};
 
 export default function Expenses() {
-  const [expenses, setExpenses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [error, setError] = useState("");
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
-  
-  const [formData, setFormData] = useState({
-    description: "",
-    amount: "",
-    date: "",
-    category: "",
-    paymentMethod: "",
-    notes: "",
-  });
+  const [expenses, setExpenses] = useState([]);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState(emptyForm);
+
+  // ---------------------------------------------
+  // Get Expenses
+  // ---------------------------------------------
 
   const getExpenses = async () => {
     try {
@@ -30,6 +39,7 @@ export default function Expenses() {
       setExpenses(response.data);
     } catch (error) {
       console.error("Get expenses error:", error);
+
       setError("Unable to load expenses.");
     } finally {
       setLoading(false);
@@ -40,6 +50,19 @@ export default function Expenses() {
     getExpenses();
   }, []);
 
+  // Prevent page scrolling while modal is open
+  useEffect(() => {
+    document.body.style.overflow = formOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [formOpen]);
+
+  // ---------------------------------------------
+  // Form
+  // ---------------------------------------------
+
   const handleChange = (event) => {
     setFormData({
       ...formData,
@@ -48,23 +71,30 @@ export default function Expenses() {
   };
 
   const resetForm = () => {
-    setFormData({
-      description: "",
-      amount: "",
-      date: "",
-      category: "",
-      paymentMethod: "",
-      notes: "",
-    });
-
+    setFormData(emptyForm);
     setEditingExpense(null);
     setError("");
   };
+
+  const openCreateForm = () => {
+    resetForm();
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    resetForm();
+  };
+
+  // ---------------------------------------------
+  // Create / Update
+  // ---------------------------------------------
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
+      setSaving(true);
       setError("");
 
       if (editingExpense) {
@@ -76,7 +106,8 @@ export default function Expenses() {
         await api.post("/expenses", formData);
       }
 
-      resetForm();
+      closeForm();
+
       await getExpenses();
     } catch (error) {
       console.error("Save expense error:", error);
@@ -85,28 +116,42 @@ export default function Expenses() {
         error.response?.data?.message ||
           "Unable to save expense."
       );
+    } finally {
+      setSaving(false);
     }
   };
+
+  // ---------------------------------------------
+  // Edit
+  // ---------------------------------------------
 
   const handleEdit = (expense) => {
     setEditingExpense(expense);
 
     setFormData({
       description: expense.description || "",
+
       amount: expense.amount || "",
+
       date: expense.date
         ? expense.date.split("T")[0]
         : "",
+
       category: expense.category || "",
-      paymentMethod: expense.paymentMethod || "",
+
+      paymentMethod:
+        expense.paymentMethod || "",
+
       notes: expense.notes || "",
     });
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    setError("");
+    setFormOpen(true);
   };
+
+  // ---------------------------------------------
+  // Delete
+  // ---------------------------------------------
 
   const handleDelete = async (expenseId) => {
     const confirmed = window.confirm(
@@ -125,284 +170,498 @@ export default function Expenses() {
       );
     } catch (error) {
       console.error("Delete expense error:", error);
+
       setError("Unable to delete expense.");
     }
   };
 
+  // ---------------------------------------------
+  // Helpers
+  // ---------------------------------------------
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(value) || 0);
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "—";
+
+    return new Intl.DateTimeFormat("pt-PT").format(
+      new Date(value)
+    );
+  };
+
+  // ---------------------------------------------
+  // Render
+  // ---------------------------------------------
+
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Expenses
-        </h1>
+      {/* Page Header */}
+      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#2563EB]">
+            Spending
+          </p>
 
-        <p className="mt-1 text-slate-500">
-          Manage your business expenses
-        </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#0F172A]">
+            Expenses
+          </h1>
+
+          <p className="mt-1 text-sm text-[#64748B]">
+            Record and manage your business expenses.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={openCreateForm}
+          className="inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8]"
+        >
+          + New Expense
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      {/* Page Error */}
+      {error && !formOpen && (
+        <div className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-        {/* Expense Form */}
-        <section className="xl:col-span-1">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+      {/* Expense List */}
+      <section className="overflow-hidden border border-[#E2E8F0] bg-white">
+        <div className="border-b border-[#E2E8F0] px-5 py-4 sm:px-6">
+          <p className="font-semibold text-[#0F172A]">
+            Expense List
+          </p>
 
-            <h2 className="text-xl font-bold text-slate-900 mb-6">
-              {editingExpense
-                ? "Edit Expense"
-                : "Add Expense"}
-            </h2>
+          <p className="mt-1 text-xs text-[#94A3B8]">
+            {expenses.length} expense
+            {expenses.length !== 1 ? "s" : ""}
+          </p>
+        </div>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Description
-                </label>
-
-                <input
-                  type="text"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Amount
-                </label>
-
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Date
-                </label>
-
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Category
-                </label>
-
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Payment Method
-                </label>
-
-                <input
-                  type="text"
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Notes
-                </label>
-
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-white font-medium hover:bg-slate-800 transition"
-                >
-                  {editingExpense
-                    ? "Update Expense"
-                    : "Create Expense"}
-                </button>
-
-                {editingExpense && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
+        {loading ? (
+          <div className="p-8 text-center text-sm text-[#64748B]">
+            Loading expenses...
           </div>
-        </section>
+        ) : expenses.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <p className="font-semibold text-[#0F172A]">
+              No expenses yet
+            </p>
 
-        {/* Expenses List */}
-        <section className="xl:col-span-2">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <p className="mt-2 text-sm text-[#64748B]">
+              Record your first expense to start tracking
+              business spending.
+            </p>
 
-            <div className="px-6 py-5 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-900">
-                Expense List
-              </h2>
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8]"
+            >
+              Add Expense
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Desktop / Tablet Table */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full">
+                <thead className="bg-[#F8FAFC]">
+                  <tr className="border-b border-[#E2E8F0]">
+                    <TableHeader>
+                      Expense
+                    </TableHeader>
 
-              <p className="text-sm text-slate-500 mt-1">
-                {expenses.length} expense
-                {expenses.length !== 1 ? "s" : ""}
-              </p>
+                    <TableHeader>
+                      Category
+                    </TableHeader>
+
+                    <TableHeader>
+                      Date
+                    </TableHeader>
+
+                    <TableHeader align="right">
+                      Amount
+                    </TableHeader>
+
+                    <TableHeader align="right">
+                      Actions
+                    </TableHeader>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {expenses.map((expense) => (
+                    <tr
+                      key={expense._id}
+                      className="border-b border-[#F1F5F9] transition last:border-b-0 hover:bg-[#F8FAFC]"
+                    >
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-[#0F172A]">
+                          {expense.description}
+                        </p>
+
+                        {expense.paymentMethod && (
+                          <p className="mt-1 text-xs text-[#94A3B8]">
+                            {expense.paymentMethod}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <CategoryBadge>
+                          {expense.category}
+                        </CategoryBadge>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {formatDate(expense.date)}
+                      </td>
+
+                      <td className="px-6 py-4 text-right text-sm font-semibold text-[#0F172A]">
+                        {formatCurrency(
+                          expense.amount
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <ActionButton
+                            onClick={() =>
+                              navigate(
+                                `/expenses/${expense._id}`
+                              )
+                            }
+                          >
+                            View
+                          </ActionButton>
+
+                          <ActionButton
+                            onClick={() =>
+                              handleEdit(expense)
+                            }
+                          >
+                            Edit
+                          </ActionButton>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDelete(
+                                expense._id
+                              )
+                            }
+                            className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2]"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {loading ? (
-              <p className="p-6 text-slate-500">
-                Loading expenses...
-              </p>
-            ) : expenses.length === 0 ? (
-              <p className="p-6 text-slate-500">
-                No expenses available.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
+            {/* Mobile Cards */}
+            <div className="divide-y divide-[#E2E8F0] sm:hidden">
+              {expenses.map((expense) => (
+                <div
+                  key={expense._id}
+                  className="p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-[#0F172A]">
+                        {expense.description}
+                      </p>
 
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Description
-                      </th>
+                      <p className="mt-1 text-xs text-[#94A3B8]">
+                        {formatDate(expense.date)}
+                      </p>
+                    </div>
 
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Category
-                      </th>
+                    <p className="whitespace-nowrap font-bold text-[#0F172A]">
+                      {formatCurrency(
+                        expense.amount
+                      )}
+                    </p>
+                  </div>
 
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Date
-                      </th>
+                  <div className="mt-3 flex items-center gap-2">
+                    <CategoryBadge>
+                      {expense.category}
+                    </CategoryBadge>
 
-                      <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                        Amount
-                      </th>
+                    {expense.paymentMethod && (
+                      <span className="text-xs text-[#94A3B8]">
+                        {expense.paymentMethod}
+                      </span>
+                    )}
+                  </div>
 
-                      <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <ActionButton
+                      onClick={() =>
+                        navigate(
+                          `/expenses/${expense._id}`
+                        )
+                      }
+                    >
+                      View
+                    </ActionButton>
 
-                  <tbody>
-                    {expenses.map((expense) => (
-                      <tr
-                        key={expense._id}
-                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
-                      >
+                    <ActionButton
+                      onClick={() =>
+                        handleEdit(expense)
+                      }
+                    >
+                      Edit
+                    </ActionButton>
 
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-slate-900">
-                            {expense.description}
-                          </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDelete(expense._id)
+                      }
+                      className="rounded-md bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626]"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
-                          {expense.paymentMethod && (
-                            <p className="text-sm text-slate-500">
-                              {expense.paymentMethod}
-                            </p>
-                          )}
-                        </td>
+      {/* Create / Edit Modal */}
+      {formOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
+          {/* Backdrop */}
+          <button
+            type="button"
+            aria-label="Close expense form"
+            onClick={closeForm}
+            className="absolute inset-0 bg-[#0F172A]/40 backdrop-blur-[2px]"
+          />
 
-                        <td className="px-6 py-4 text-slate-600">
-                          {expense.category}
-                        </td>
+          {/* Modal */}
+          <div className="relative flex max-h-full w-full flex-col bg-white shadow-2xl sm:max-w-2xl sm:rounded-xl">
+            {/* Modal Header */}
+            <header className="flex items-center justify-between border-b border-[#E2E8F0] px-5 py-4 sm:px-7">
+              <div>
+                <p className="text-xs font-semibold text-[#2563EB]">
+                  {editingExpense
+                    ? "Edit expense"
+                    : "New expense"}
+                </p>
 
-                        <td className="px-6 py-4 text-slate-600">
-                          {new Date(
-                            expense.date
-                          ).toLocaleDateString()}
-                        </td>
-
-                        <td className="px-6 py-4 text-right font-medium text-slate-900">
-                          {Number(
-                            expense.amount
-                          ).toFixed(2)}{" "}
-                          €
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => navigate(`/expenses/${expense._id}`)}
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                            >
-                            View
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleEdit(expense)
-                              }
-                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              onClick={() =>
-                                handleDelete(expense._id)
-                              }
-                              className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition"
-                            >
-                              Delete
-                            </button>
-
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-
-                </table>
+                <h2 className="mt-1 text-xl font-bold text-[#0F172A]">
+                  {editingExpense
+                    ? editingExpense.description
+                    : "Add Expense"}
+                </h2>
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={closeForm}
+                aria-label="Close"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-[#64748B] transition hover:bg-[#F1F5F9]"
+              >
+                ×
+              </button>
+            </header>
+
+            {/* Form */}
+            <form
+              id="expense-form"
+              onSubmit={handleSubmit}
+              className="overflow-y-auto"
+            >
+              <div className="p-5 sm:p-7">
+                {error && (
+                  <div className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  {/* Description */}
+                  <div className="sm:col-span-2">
+                    <InputField
+                      label="Description"
+                      name="description"
+                      value={
+                        formData.description
+                      }
+                      onChange={handleChange}
+                      placeholder="What was this expense for?"
+                      required
+                    />
+                  </div>
+
+                  {/* Amount */}
+                  <InputField
+                    label="Amount"
+                    type="number"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleChange}
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+
+                  {/* Date */}
+                  <InputField
+                    label="Date"
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    required
+                  />
+
+                  {/* Category */}
+                  <InputField
+                    label="Category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="Software, Office, Travel..."
+                    required
+                  />
+
+                  {/* Payment */}
+                  <InputField
+                    label="Payment Method"
+                    name="paymentMethod"
+                    value={
+                      formData.paymentMethod
+                    }
+                    onChange={handleChange}
+                    placeholder="Card, Transfer, Cash..."
+                  />
+
+                  {/* Notes */}
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                      Notes
+                    </label>
+
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Optional notes about this expense..."
+                      className="w-full resize-none rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-3 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-3 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <footer className="flex justify-end gap-3 border-t border-[#E2E8F0] px-5 py-4 sm:px-7">
+              <button
+                type="button"
+                onClick={closeForm}
+                disabled={saving}
+                className="rounded-lg border border-[#CBD5E1] px-4 py-2.5 text-sm font-semibold text-[#475569] transition hover:bg-[#F8FAFC]"
+              >
+                Cancel
+              </button>
+
+              <button
+                form="expense-form"
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+              >
+                {saving
+                  ? "Saving..."
+                  : editingExpense
+                    ? "Save Changes"
+                    : "Create Expense"}
+              </button>
+            </footer>
           </div>
-        </section>
-      </div>
+        </div>
+      )}
     </Layout>
+  );
+}
+
+/* ================================================= */
+/* Local components                                  */
+/* ================================================= */
+
+function InputField({
+  label,
+  type = "text",
+  ...props
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        {...props}
+        className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-3 focus:ring-blue-100"
+      />
+    </div>
+  );
+}
+
+function TableHeader({
+  children,
+  align = "left",
+}) {
+  const alignment =
+    align === "right"
+      ? "text-right"
+      : "text-left";
+
+  return (
+    <th
+      className={`px-6 py-3 ${alignment} text-xs font-semibold uppercase tracking-[0.1em] text-[#94A3B8]`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function ActionButton({ children, ...props }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className="rounded-md border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs font-semibold text-[#475569] transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function CategoryBadge({ children }) {
+  return (
+    <span className="inline-flex rounded-full bg-[#EFF6FF] px-2.5 py-1 text-xs font-semibold text-[#2563EB]">
+      {children}
+    </span>
   );
 }

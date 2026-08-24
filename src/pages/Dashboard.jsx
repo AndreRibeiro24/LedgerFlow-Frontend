@@ -3,319 +3,520 @@ import api from "../services/api";
 import Layout from "../components/Layout";
 import ExpensesByCategoryChart from "../components/ExpenseByCategoryChart";
 
-
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [invoiceStatus, setInvoiceStatus] = useState([]); 
-  const [recentInvoices, setRecentInvoiceStatus] = useState([]);
+  const [invoiceStatus, setInvoiceStatus] = useState(null);
+  const [recentInvoices, setRecentInvoices] = useState([]);
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [expensesByCategory, setExpensesByCategory] = useState([]);
-  //useEffect
-useEffect(() => {
-  const getSummary = async () => {
-    try {
-      const response = await api.get("/dashboard/summary");
-      setSummary(response.data);
-    } catch (error) {
-      console.error("Get dashboard summary error:", error);
-    }
+
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const getSummary = async () => {
+      try {
+        const response = await api.get("/dashboard/summary");
+        setSummary(response.data);
+      } catch (error) {
+        console.error("Get dashboard summary error:", error);
+      }
+    };
+
+    const getInvoiceStatus = async () => {
+      try {
+        const response = await api.get(
+          "/dashboard/invoice-status"
+        );
+
+        setInvoiceStatus(response.data);
+      } catch (error) {
+        console.error(
+          "Get invoice status error:",
+          error
+        );
+      }
+    };
+
+    const getRecentInvoices = async () => {
+      try {
+        const response = await api.get(
+          "/dashboard/recent-invoices"
+        );
+
+        setRecentInvoices(response.data);
+      } catch (error) {
+        console.error(
+          "Get recent invoices error:",
+          error
+        );
+      }
+    };
+
+    const getRecentExpenses = async () => {
+      try {
+        const response = await api.get(
+          "/dashboard/recent-expenses"
+        );
+
+        setRecentExpenses(response.data);
+      } catch (error) {
+        console.error(
+          "Get recent expenses error:",
+          error
+        );
+      }
+    };
+
+    const getExpensesByCategory = async () => {
+      try {
+        const response = await api.get(
+          "/dashboard/expenses-by-category"
+        );
+
+        setExpensesByCategory(response.data);
+      } catch (error) {
+        console.error(
+          "Get expenses by category error:",
+          error
+        );
+      }
+    };
+
+    const loadDashboard = async () => {
+      setLoading(true);
+
+      await Promise.allSettled([
+        getSummary(),
+        getInvoiceStatus(),
+        getRecentInvoices(),
+        getRecentExpenses(),
+        getExpensesByCategory(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadDashboard();
+  }, []);
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(Number(value) || 0);
   };
 
-  const getInvoiceStatus = async () => {
-    try {
-      const response = await api.get("/dashboard/invoice-status");
-      setInvoiceStatus(response.data);
-    } catch (error) {
-      console.error("Get invoice status error:", error);
-    }
-  };
-  
-  const getRecentInvoices = async()=>{
-    try{
-      const response = await api.get("/dashboard/recent-invoices")
-      setRecentInvoiceStatus(response.data)
-    } catch(error){
-      console.error("Get recent invoices error:", error)
-    }
-  }
+  const formatDate = (date) => {
+    if (!date) return "—";
 
-  const getRecentExpenses = async()=>{
-    try{
-      const response = await api.get("/dashboard/recent-expenses")
-      setRecentExpenses(response.data)
-    }catch(error){
-      console.error("Get Recent Expenses Error:", error)
-    }
-
-  }
-
-  const getExpensesByCategory = async()=>{
-    try{
-      const response = await api.get("/dashboard/expenses-by-category")
-      setExpensesByCategory(response.data)
-    }catch(error){
-      console.error("Get Expenses by Category Error:", error)
-    }
-  }
-  const loadDashboard = async () => {
-    setLoading(true);
-
-    await Promise.allSettled([
-      getSummary(),
-      getInvoiceStatus(),
-      getRecentInvoices(),
-      getRecentExpenses(),
-      getExpensesByCategory(),
-    ]);
-
-    setLoading(false);
+    return new Intl.DateTimeFormat("pt-PT").format(
+      new Date(date)
+    );
   };
 
-  loadDashboard();
-}, []);
+  if (loading && !summary) {
+    return (
+      <Layout>
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#DBEAFE] border-t-[#2563EB]" />
 
-  if (loading) {
-    return <h1>Loading dashboard...</h1>;
+            <p className="text-sm text-[#64748B]">
+              Loading your financial overview...
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   if (!summary) {
-    return <h1>No summary available</h1>;
+    return (
+      <Layout>
+        <div className="border border-[#E2E8F0] bg-white p-8 text-center">
+          <p className="font-semibold text-[#0F172A]">
+            Dashboard unavailable
+          </p>
+
+          <p className="mt-2 text-sm text-[#64748B]">
+            We couldn't load your financial summary.
+          </p>
+        </div>
+      </Layout>
+    );
   }
 
-
-
-
-//created cards for visual UI 
   const cards = [
     {
-      title: "Total Clients",
-      value: summary.totalClients,
+      label: "Revenue",
+      value: formatCurrency(summary.totalRevenue),
+      description: "Paid invoices",
+      accent: true,
     },
     {
-      title: "Total Invoices",
+      label: "Profit",
+      value: formatCurrency(summary.profit),
+      description: "Revenue minus expenses",
+    },
+    {
+      label: "Expenses",
+      value: formatCurrency(
+        summary.totalExpensesAmount
+      ),
+      description: `${summary.totalExpenses} recorded`,
+    },
+    {
+      label: "Invoices",
       value: summary.totalInvoices,
-    },
-    {
-      title: "Total Expenses",
-      value: summary.totalExpenses,
-    },
-    {
-      title: "Revenue",
-      value: `${summary.totalRevenue.toFixed(2)} €`,
-    },
-    {
-      title: "Expenses Amount",
-      value: `${summary.totalExpensesAmount.toFixed(2)} €`,
-    },
-    {
-      title: "Profit",
-      value: `${summary.profit.toFixed(2)} €`,
+      description: `${summary.totalClients} clients`,
     },
   ];
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Dashboard
-        </h1>
-
-        <p className="text-slate-500 mt-1">
-          Overview of your business finances
+      {/* Page Header */}
+      <div className="mb-7">
+        <p className="text-sm font-semibold text-[#2563EB]">
+          Overview
         </p>
+
+        <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">
+              Dashboard
+            </h1>
+
+            <p className="mt-1 text-sm text-[#64748B]">
+              A quick view of your business performance.
+            </p>
+          </div>
+
+          <p className="text-xs text-[#94A3B8]">
+            Revenue includes paid invoices only.
+          </p>
+        </div>
       </div>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        {cards.map((card) => (
+      {/* KPI Metrics */}
+      <section className="grid grid-cols-2 border-y border-[#E2E8F0] bg-white lg:grid-cols-4">
+        {cards.map((card, index) => (
           <div
-            key={card.title}
-            className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm"
+            key={card.label}
+            className={`
+              relative px-5 py-5 sm:px-6
+              ${
+                index % 2 === 0
+                  ? "border-r border-[#E2E8F0]"
+                  : ""
+              }
+              ${
+                index < 2
+                  ? "border-b border-[#E2E8F0] lg:border-b-0"
+                  : ""
+              }
+              ${
+                index !== cards.length - 1
+                  ? "lg:border-r lg:border-[#E2E8F0]"
+                  : ""
+              }
+            `}
           >
-            <p className="text-sm font-medium text-slate-500">
-              {card.title}
+            {card.accent && (
+              <span className="absolute left-0 top-5 h-8 w-1 bg-[#2563EB]" />
+            )}
+
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#94A3B8]">
+              {card.label}
             </p>
 
-            <p className="text-3xl font-bold text-slate-900 mt-3">
+            <p
+              className={`mt-3 text-2xl font-bold tracking-tight sm:text-3xl ${
+                card.accent
+                  ? "text-[#2563EB]"
+                  : "text-[#0F172A]"
+              }`}
+            >
               {card.value}
+            </p>
+
+            <p className="mt-2 text-xs text-[#64748B]">
+              {card.description}
             </p>
           </div>
         ))}
       </section>
 
-                                      {/* Invoice Status */}
+      {/* Middle Section */}
+      <section className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-5">
+        {/* Expenses Chart */}
+        <div className="xl:col-span-3">
+          <div className="h-full border border-[#E2E8F0] bg-white p-5 sm:p-6">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-[#0F172A]">
+                Expenses by Category
+              </p>
 
-      {invoiceStatus && (  
-  <section className="mt-8">
-    <h2 className="text-xl font-bold text-slate-900 mb-4">
-      Invoice Status
-    </h2>
+              <p className="mt-1 text-xs text-[#94A3B8]">
+                How your business spending is distributed.
+              </p>
+            </div>
 
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <p className="text-sm text-slate-500">Draft</p>
-        <p className="text-2xl font-bold">{invoiceStatus.draft}</p>
-      </div>
+            <ExpensesByCategoryChart
+              expensesByCategory={
+                expensesByCategory
+              }
+            />
+          </div>
+        </div>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <p className="text-sm text-slate-500">Pending</p>
-        <p className="text-2xl font-bold">{invoiceStatus.pending}</p>
-      </div>
+        {/* Invoice Status */}
+        <div className="xl:col-span-2">
+          <div className="h-full border border-[#E2E8F0] bg-white">
+            <div className="border-b border-[#E2E8F0] px-5 py-5 sm:px-6">
+              <p className="text-sm font-semibold text-[#0F172A]">
+                Invoice Status
+              </p>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <p className="text-sm text-slate-500">Paid</p>
-        <p className="text-2xl font-bold">{invoiceStatus.paid}</p>
-      </div>
+              <p className="mt-1 text-xs text-[#94A3B8]">
+                Current invoice distribution.
+              </p>
+            </div>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <p className="text-sm text-slate-500">Overdue</p>
-        <p className="text-2xl font-bold">{invoiceStatus.overdue}</p>
-      </div>
+            {invoiceStatus ? (
+              <div>
+                <StatusRow
+                  label="Paid"
+                  value={invoiceStatus.paid}
+                  type="paid"
+                />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <p className="text-sm text-slate-500">Cancelled</p>
-        <p className="text-2xl font-bold">{invoiceStatus.cancelled}</p>
-      </div>
-    </div>
-  </section>
+                <StatusRow
+                  label="Pending"
+                  value={invoiceStatus.pending}
+                  type="pending"
+                />
 
-  
-)}
-                                                    {/* Recent Invoices */}
+                <StatusRow
+                  label="Draft"
+                  value={invoiceStatus.draft}
+                  type="draft"
+                />
 
-    <section className="mt-8">
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-xl font-bold text-slate-900">
-      Recent Invoices
-    </h2>
-  </div>
+                <StatusRow
+                  label="Overdue"
+                  value={invoiceStatus.overdue}
+                  type="overdue"
+                />
 
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    {recentInvoices.length === 0 ? (
-      <p className="p-6 text-slate-500">
-        No recent invoices available.
-      </p>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Invoice
-              </th>
+                <StatusRow
+                  label="Cancelled"
+                  value={invoiceStatus.cancelled}
+                  type="cancelled"
+                  last
+                />
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-[#94A3B8]">
+                No invoice status data available.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
 
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Status
-              </th>
-
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Date
-              </th>
-
-              <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                Total
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {recentInvoices.map((invoice) => (
-              <tr
+      {/* Recent Activity */}
+      <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Recent Invoices */}
+        <ActivityPanel
+          title="Recent Invoices"
+          subtitle="Latest invoices issued"
+        >
+          {recentInvoices.length === 0 ? (
+            <EmptyState text="No recent invoices." />
+          ) : (
+            recentInvoices.map((invoice) => (
+              <div
                 key={invoice._id}
-                className="border-b border-slate-100 last:border-b-0"
+                className="flex items-center gap-4 border-b border-[#F1F5F9] px-5 py-4 last:border-b-0 sm:px-6"
               >
-                <td className="px-6 py-4 font-medium text-slate-900">
-                  {invoice.invoiceNumber}
-                </td>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#0F172A]">
+                    {invoice.invoiceNumber}
+                  </p>
 
-                <td className="px-6 py-4 text-slate-600 capitalize">
-                  {invoice.status}
-                </td>
+                  <p className="mt-1 text-xs text-[#94A3B8]">
+                    {formatDate(invoice.issueDate)}
+                  </p>
+                </div>
 
-                <td className="px-6 py-4 text-slate-600">
-                  {new Date(invoice.issueDate).toLocaleDateString()}
-                </td>
+                <StatusBadge
+                  status={invoice.status}
+                />
 
-                <td className="px-6 py-4 text-right font-medium text-slate-900">
-                  {invoice.total.toFixed(2)} €
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-</section>
+                <p className="w-24 text-right text-sm font-semibold text-[#0F172A]">
+                  {formatCurrency(invoice.total)}
+                </p>
+              </div>
+            ))
+          )}
+        </ActivityPanel>
 
-                                              {/* Recent Expenses */}
-
-<section className="mt-8">
-  <h2 className="text-xl font-bold text-slate-900 mb-4">
-    Recent Expenses
-  </h2>
-
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    {recentExpenses.length === 0 ? (
-      <p className="p-6 text-slate-500">
-        No recent expenses available.
-      </p>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr>
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Description
-              </th>
-
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Category
-              </th>
-
-              <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                Date
-              </th>
-
-              <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                Amount
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {recentExpenses.map((expense) => (
-              <tr
+        {/* Recent Expenses */}
+        <ActivityPanel
+          title="Recent Expenses"
+          subtitle="Latest business spending"
+        >
+          {recentExpenses.length === 0 ? (
+            <EmptyState text="No recent expenses." />
+          ) : (
+            recentExpenses.map((expense) => (
+              <div
                 key={expense._id}
-                className="border-b border-slate-100 last:border-b-0"
+                className="flex items-center gap-4 border-b border-[#F1F5F9] px-5 py-4 last:border-b-0 sm:px-6"
               >
-                <td className="px-6 py-4 font-medium text-slate-900">
-                  {expense.description}
-                </td>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-[#0F172A]">
+                    {expense.description}
+                  </p>
 
-                <td className="px-6 py-4 text-slate-600">
-                  {expense.category}
-                </td>
+                  <p className="mt-1 truncate text-xs text-[#94A3B8]">
+                    {expense.category} ·{" "}
+                    {formatDate(expense.date)}
+                  </p>
+                </div>
 
-                <td className="px-6 py-4 text-slate-600">
-                  {new Date(expense.date).toLocaleDateString()}
-                </td>
-
-                <td className="px-6 py-4 text-right font-medium text-slate-900">
-                  {expense.amount.toFixed(2)} €
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-</section>
-                                      {/* Expenses By Category Charts */}
-<section className="mt-8">
-  <ExpensesByCategoryChart data={expensesByCategory} />
-</section>
+                <p className="text-sm font-semibold text-[#0F172A]">
+                  {formatCurrency(expense.amount)}
+                </p>
+              </div>
+            ))
+          )}
+        </ActivityPanel>
+      </section>
     </Layout>
+  );
+}
+
+/* ------------------------------------------------ */
+/* Small Dashboard Components                       */
+/* ------------------------------------------------ */
+
+function ActivityPanel({
+  title,
+  subtitle,
+  children,
+}) {
+  return (
+    <div className="overflow-hidden border border-[#E2E8F0] bg-white">
+      <div className="border-b border-[#E2E8F0] px-5 py-5 sm:px-6">
+        <p className="text-sm font-semibold text-[#0F172A]">
+          {title}
+        </p>
+
+        <p className="mt-1 text-xs text-[#94A3B8]">
+          {subtitle}
+        </p>
+      </div>
+
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function EmptyState({ text }) {
+  return (
+    <div className="px-6 py-10 text-center">
+      <p className="text-sm text-[#94A3B8]">
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function StatusRow({
+  label,
+  value,
+  type,
+  last,
+}) {
+  const styles = {
+    paid: {
+      dot: "bg-[#16A34A]",
+      text: "text-[#16A34A]",
+    },
+
+    pending: {
+      dot: "bg-[#2563EB]",
+      text: "text-[#2563EB]",
+    },
+
+    draft: {
+      dot: "bg-[#94A3B8]",
+      text: "text-[#64748B]",
+    },
+
+    overdue: {
+      dot: "bg-[#D97706]",
+      text: "text-[#D97706]",
+    },
+
+    cancelled: {
+      dot: "bg-[#DC2626]",
+      text: "text-[#DC2626]",
+    },
+  };
+
+  const style = styles[type];
+
+  return (
+    <div
+      className={`flex items-center justify-between px-5 py-4 sm:px-6 ${
+        last
+          ? ""
+          : "border-b border-[#F1F5F9]"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${style.dot}`}
+        />
+
+        <span className="text-sm font-medium text-[#475569]">
+          {label}
+        </span>
+      </div>
+
+      <span
+        className={`text-sm font-bold ${style.text}`}
+      >
+        {value ?? 0}
+      </span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const styles = {
+    paid:
+      "bg-[#F0FDF4] text-[#15803D]",
+    pending:
+      "bg-[#EFF6FF] text-[#2563EB]",
+    draft:
+      "bg-[#F1F5F9] text-[#64748B]",
+    overdue:
+      "bg-[#FFFBEB] text-[#B45309]",
+    cancelled:
+      "bg-[#FEF2F2] text-[#DC2626]",
+  };
+
+  return (
+    <span
+      className={`hidden rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize sm:inline ${
+        styles[status] ||
+        "bg-[#F1F5F9] text-[#64748B]"
+      }`}
+    >
+      {status}
+    </span>
   );
 }

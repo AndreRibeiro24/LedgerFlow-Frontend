@@ -1,76 +1,84 @@
-import{
-    PieChart,
-    Pie,
-    Cell,
-    Tooltip,
-    ResponsiveContainer,
-    Legend,
-} from "recharts"; 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
-export default function ExpensesByCategoryChart({data}){
-    const COLORS = [
-    "#0f172a",
-    "#334155",
-    "#64748b",
-    "#94a3b8",
-    "#cbd5e1",
-    ];
+export default function ExpensesByCategoryChart({
+  expensesByCategory,
+}) {
+  const COLORS = [
+    "#2563EB",
+    "#16A34A",
+    "#D97706",
+    "#7C3AED",
+    "#0891B2",
+    "#DC2626",
+  ];
 
-if (!data || data.length === 0) {
+  if (
+    !expensesByCategory ||
+    expensesByCategory.length === 0
+  ) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900 mb-4">
-          Expenses by Category
-        </h2>
-
-        <p className="text-slate-500">
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-[#94A3B8]">
           No expense data available.
         </p>
       </div>
     );
   }
 
-  const chartData = data.map((expense) => ({
-    name: expense._id,
-    value: expense.totalAmount,
-  }));
-
+  const chartData = expensesByCategory.map(
+    (expense) => ({
+      name: expense._id,
+      value: Number(expense.totalAmount),
+    })
+  );
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-      <h2 className="text-xl font-bold text-slate-900 mb-4">
-        Expenses by Category
-      </h2>
+    <div className="h-72 w-full">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+      >
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="45%"
+            innerRadius={60}
+            outerRadius={95}
+            paddingAngle={3}
+          >
+            {chartData.map((entry, index) => (
+              <Cell
+                key={entry.name}
+                fill={
+                  COLORS[index % COLORS.length]
+                }
+              />
+            ))}
+          </Pie>
 
-      <div className="w-full h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={65}
-              outerRadius={105}
-              paddingAngle={3}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={entry.name}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
+          <Tooltip
+            formatter={(value) => [
+              `${Number(value).toFixed(2)} €`,
+              "Expenses",
+            ]}
+          />
 
-            <Tooltip
-              formatter={(value) => [`${value.toFixed(2)} €`, "Expenses"]}
-            />
-
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+          <Legend
+            verticalAlign="bottom"
+            height={36}
+          />
+        </PieChart>
+      </ResponsiveContainer>
     </div>
   );
 }

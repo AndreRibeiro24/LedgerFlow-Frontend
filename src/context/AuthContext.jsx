@@ -1,39 +1,95 @@
-import {createContext, useState} from "react"
-import { useNavigate } from "react-router-dom"
-import api from "../services/api.js"
-export const AuthContext = createContext()
+import { createContext, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
-export default function AuthProvider({children}){
-    const[user,setUser] = useState(null)
-    const[loading,setLoading] = useState(false)
-    const navigate = useNavigate()
+export const AuthContext = createContext();
 
-    const login = async (body)=>{
-        try{
-            setLoading(true)
-            const response = await api.post("/auth/login", body)
-            if(response.status === 200){
-                setUser(response.data.user)
-                localStorage.setItem("authToken", response.data.token)
-                navigate("/dashboard")
-            }
-        }catch(error){
-          console.error("LOGIN ERROR:", error);
-          console.error("RESPONSE:", error.response);
-          console.error("MESSAGE:", error.message);
-        }finally{
-            setLoading(false)   
-        }
+export default function AuthProvider({ children }) {
+  const navigate = useNavigate();
+
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("authUser");
+
+    return storedUser
+      ? JSON.parse(storedUser)
+      : null;
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const login = async (body) => {
+    try {
+      setLoading(true);
+
+      const response = await api.post("/auth/login", body);
+
+      if (response.status === 200) {
+        setUser(response.data.user);
+
+        localStorage.setItem(
+          "authToken",
+          response.data.token
+        );
+
+        localStorage.setItem(
+          "authUser",
+          JSON.stringify(response.data.user)
+        );
+
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error.response || error
+      );
+    } finally {
+      setLoading(false);
     }
-return(
+  };
+
+  const register = async (body) => {
+    try {
+      setLoading(true);
+
+      const response = await api.post(
+        "/auth/register",
+        body
+      );
+
+      if (response.status === 201) {
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error(
+        "Register error:",
+        error.response || error
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("authUser");
+
+    setUser(null);
+
+    navigate("/login");
+  };
+
+  return (
     <AuthContext.Provider
-    value={{
+      value={{
         user,
         loading,
-        login
-    }}
+        login,
+        register,
+        logout,
+      }}
     >
-        {children}
+      {children}
     </AuthContext.Provider>
-)
+  );
 }

@@ -1,31 +1,36 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import api from "../services/api";
 import Layout from "../components/Layout";
-import {useNavigate} from "react-router-dom"
 
-
+const emptyForm = {
+  name: "",
+  email: "",
+  phone: "",
+  taxNumber: "",
+  address: "",
+  notes: "",
+};
 
 export default function Clients() {
+  const navigate = useNavigate();
+
   const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate(); 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    taxNumber: "",
-    address: "",
-    notes: "",
-  });
+
+  const [formData, setFormData] = useState(emptyForm);
 
   const getClients = async () => {
     try {
       setLoading(true);
 
       const response = await api.get("/clients");
-
       setClients(response.data);
     } catch (error) {
       console.error("Get clients error:", error);
@@ -39,6 +44,14 @@ export default function Clients() {
     getClients();
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = formOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [formOpen]);
+
   const handleChange = (event) => {
     setFormData({
       ...formData,
@@ -47,39 +60,48 @@ export default function Clients() {
   };
 
   const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      taxNumber: "",
-      address: "",
-      notes: "",
-    });
-
+    setFormData(emptyForm);
     setEditingClient(null);
     setError("");
+  };
+
+  const openCreateForm = () => {
+    resetForm();
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    resetForm();
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
+      setSaving(true);
       setError("");
 
       if (editingClient) {
-        await api.put(`/clients/${editingClient._id}`, formData);
+        await api.put(
+          `/clients/${editingClient._id}`,
+          formData
+        );
       } else {
         await api.post("/clients", formData);
       }
 
-      resetForm();
+      closeForm();
       await getClients();
     } catch (error) {
       console.error("Save client error:", error);
 
       setError(
-        error.response?.data?.message || "Unable to save client."
+        error.response?.data?.message ||
+          "Unable to save client."
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -95,10 +117,8 @@ export default function Clients() {
       notes: client.notes || "",
     });
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    setError("");
+    setFormOpen(true);
   };
 
   const handleDelete = async (clientId) => {
@@ -124,254 +144,399 @@ export default function Clients() {
 
   return (
     <Layout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">
-          Clients
-        </h1>
+      {/* Page Header */}
+      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#2563EB]">
+            Customers
+          </p>
 
-        <p className="mt-1 text-slate-500">
-          Manage your business clients
-        </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#0F172A]">
+            Clients
+          </h1>
+
+          <p className="mt-1 text-sm text-[#64748B]">
+            Manage your client information and billing details.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={openCreateForm}
+          className="inline-flex items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8]"
+        >
+          + New Client
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Client Form */}
-        <section className="xl:col-span-1">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">
-              {editingClient
-                ? "Edit Client"
-                : "Add Client"}
-            </h2>
+      {error && !formOpen && (
+        <div className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
+      {/* Client List */}
+      <section className="overflow-hidden border border-[#E2E8F0] bg-white">
+        <div className="border-b border-[#E2E8F0] px-5 py-4 sm:px-6">
+          <p className="font-semibold text-[#0F172A]">
+            Client List
+          </p>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Name
-                </label>
+          <p className="mt-1 text-xs text-[#94A3B8]">
+            {clients.length} client
+            {clients.length !== 1 ? "s" : ""}
+          </p>
+        </div>
 
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Email
-                </label>
-
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Phone
-                </label>
-
-                <input
-                  type="text"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Tax Number
-                </label>
-
-                <input
-                  type="text"
-                  name="taxNumber"
-                  value={formData.taxNumber}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Address
-                </label>
-
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Notes
-                </label>
-
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows="3"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400"
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-white font-medium hover:bg-slate-800 transition"
-                >
-                  {editingClient
-                    ? "Update Client"
-                    : "Create Client"}
-                </button>
-
-                {editingClient && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
-            </form>
+        {loading ? (
+          <div className="p-8 text-center text-sm text-[#64748B]">
+            Loading clients...
           </div>
-        </section>
+        ) : clients.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            <p className="font-semibold text-[#0F172A]">
+              No clients yet
+            </p>
 
-        {/* Clients List */}
-        <section className="xl:col-span-2">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-200">
-              <h2 className="text-xl font-bold text-slate-900">
-                Client List
-              </h2>
+            <p className="mt-2 text-sm text-[#64748B]">
+              Add your first client to start creating invoices.
+            </p>
 
-              <p className="text-sm text-slate-500 mt-1">
-                {clients.length} client
-                {clients.length !== 1 ? "s" : ""}
-              </p>
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="mt-5 rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8]"
+            >
+              Add Client
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Desktop / Tablet */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full">
+                <thead className="bg-[#F8FAFC]">
+                  <tr className="border-b border-[#E2E8F0]">
+                    <TableHeader>Name</TableHeader>
+                    <TableHeader>Email</TableHeader>
+                    <TableHeader>Tax Number</TableHeader>
+                    <TableHeader align="right">
+                      Actions
+                    </TableHeader>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {clients.map((client) => (
+                    <tr
+                      key={client._id}
+                      className="border-b border-[#F1F5F9] transition last:border-b-0 hover:bg-[#F8FAFC]"
+                    >
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-[#0F172A]">
+                          {client.name}
+                        </p>
+
+                        <p className="mt-1 text-xs text-[#94A3B8]">
+                          {client.phone}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {client.email}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-[#64748B]">
+                        {client.taxNumber}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <ActionButton
+                            onClick={() =>
+                              navigate(
+                                `/clients/${client._id}`
+                              )
+                            }
+                          >
+                            View
+                          </ActionButton>
+
+                          <ActionButton
+                            onClick={() =>
+                              handleEdit(client)
+                            }
+                          >
+                            Edit
+                          </ActionButton>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDelete(client._id)
+                            }
+                            className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2]"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {loading ? (
-              <p className="p-6 text-slate-500">
-                Loading clients...
-              </p>
-            ) : clients.length === 0 ? (
-              <p className="p-6 text-slate-500">
-                No clients available.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Name
-                      </th>
+            {/* Mobile */}
+            <div className="divide-y divide-[#E2E8F0] sm:hidden">
+              {clients.map((client) => (
+                <div
+                  key={client._id}
+                  className="p-5"
+                >
+                  <div>
+                    <p className="font-semibold text-[#0F172A]">
+                      {client.name}
+                    </p>
 
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Email
-                      </th>
+                    <p className="mt-1 text-sm text-[#64748B]">
+                      {client.email}
+                    </p>
 
-                      <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                        Tax Number
-                      </th>
+                    <p className="mt-1 text-xs text-[#94A3B8]">
+                      {client.phone}
+                    </p>
+                  </div>
 
-                      <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <ActionButton
+                      onClick={() =>
+                        navigate(
+                          `/clients/${client._id}`
+                        )
+                      }
+                    >
+                      View
+                    </ActionButton>
 
-                  <tbody>
-                    {clients.map((client) => (
-                      <tr
-                        key={client._id}
-                        className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
-                      >
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-slate-900">
-                            {client.name}
-                          </p>
+                    <ActionButton
+                      onClick={() =>
+                        handleEdit(client)
+                      }
+                    >
+                      Edit
+                    </ActionButton>
 
-                          <p className="text-sm text-slate-500">
-                            {client.phone}
-                          </p>
-                        </td>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDelete(client._id)
+                      }
+                      className="rounded-md bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626]"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
-                        <td className="px-6 py-4 text-slate-600">
-                          {client.email}
-                        </td>
+      {/* Create / Edit Modal */}
+      {formOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
+          <button
+            type="button"
+            aria-label="Close client form"
+            onClick={closeForm}
+            className="absolute inset-0 bg-[#0F172A]/40 backdrop-blur-[2px]"
+          />
 
-                        <td className="px-6 py-4 text-slate-600">
-                          {client.taxNumber}
-                        </td>
-                        
-                        <td className="px-6 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button
-                                  onClick={() => navigate(`/clients/${client._id}`)}
-                                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                            >
-                                    View
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleEdit(client)
-                              }
-                              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                            >
-                              Edit
-                            </button>
+          <div className="relative flex max-h-full w-full flex-col bg-white shadow-2xl sm:max-w-2xl sm:rounded-xl">
+            {/* Header */}
+            <header className="flex items-center justify-between border-b border-[#E2E8F0] px-5 py-4 sm:px-7">
+              <div>
+                <p className="text-xs font-semibold text-[#2563EB]">
+                  {editingClient
+                    ? "Edit client"
+                    : "New client"}
+                </p>
 
-                            <button
-                              onClick={() =>
-                                handleDelete(client._id)
-                              }
-                              className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <h2 className="mt-1 text-xl font-bold text-[#0F172A]">
+                  {editingClient
+                    ? editingClient.name
+                    : "Add Client"}
+                </h2>
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={closeForm}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-xl text-[#64748B] transition hover:bg-[#F1F5F9]"
+              >
+                ×
+              </button>
+            </header>
+
+            {/* Form */}
+            <form
+              id="client-form"
+              onSubmit={handleSubmit}
+              className="overflow-y-auto"
+            >
+              <div className="p-5 sm:p-7">
+                {error && (
+                  <div className="mb-5 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <InputField
+                    label="Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Client name"
+                    required
+                  />
+
+                  <InputField
+                    label="Email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="client@example.com"
+                    required
+                  />
+
+                  <InputField
+                    label="Phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="+351..."
+                    required
+                  />
+
+                  <InputField
+                    label="Tax Number"
+                    name="taxNumber"
+                    value={formData.taxNumber}
+                    onChange={handleChange}
+                    placeholder="Tax identification number"
+                    required
+                  />
+
+                  <div className="sm:col-span-2">
+                    <InputField
+                      label="Address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      placeholder="Billing address"
+                      required
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+                      Notes
+                    </label>
+
+                    <textarea
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Optional notes about this client..."
+                      className="w-full resize-none rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-3 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-3 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <footer className="flex justify-end gap-3 border-t border-[#E2E8F0] px-5 py-4 sm:px-7">
+              <button
+                type="button"
+                onClick={closeForm}
+                disabled={saving}
+                className="rounded-lg border border-[#CBD5E1] px-4 py-2.5 text-sm font-semibold text-[#475569] transition hover:bg-[#F8FAFC]"
+              >
+                Cancel
+              </button>
+
+              <button
+                form="client-form"
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:bg-[#94A3B8]"
+              >
+                {saving
+                  ? "Saving..."
+                  : editingClient
+                    ? "Save Changes"
+                    : "Create Client"}
+              </button>
+            </footer>
           </div>
-        </section>
-      </div>
+        </div>
+      )}
     </Layout>
+  );
+}
+
+function InputField({
+  label,
+  type = "text",
+  ...props
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[#0F172A]">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        {...props}
+        className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-3 focus:ring-blue-100"
+      />
+    </div>
+  );
+}
+
+function TableHeader({
+  children,
+  align = "left",
+}) {
+  const alignment =
+    align === "right"
+      ? "text-right"
+      : "text-left";
+
+  return (
+    <th
+      className={`px-6 py-3 ${alignment} text-xs font-semibold uppercase tracking-[0.1em] text-[#94A3B8]`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function ActionButton({ children, ...props }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className="rounded-md border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs font-semibold text-[#475569] transition hover:border-[#CBD5E1] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+    >
+      {children}
+    </button>
   );
 }

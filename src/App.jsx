@@ -1,5 +1,6 @@
 import {Routes, Route} from "react-router-dom"
 
+import Register from "./pages/Register"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients"
@@ -9,6 +10,7 @@ import ClientsDetails from "./pages/ClientDetails"
 import ProtectedRoute from "./routes/ProtectedRoutes";
 import ExpenseDetails from "./pages/ExpensesDetails";
 import InvoicesDetails from "./pages/InvoicesDetails";
+import Landing from "./pages/Landing";
 
 function App() {
   return (
@@ -49,7 +51,14 @@ function App() {
       </ProtectedRoute>
       
     }/>
+
+    <Route path="/" element={<Landing/>   
+    }/>
+    
+    <Route path="/register" element={<Register/>}/>
+    
     </Routes>
+
 
   );
 }
