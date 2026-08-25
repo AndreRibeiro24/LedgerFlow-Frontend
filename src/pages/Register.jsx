@@ -6,7 +6,12 @@ import { AuthContext } from "../context/AuthContext";
 import { ThemeContext } from "../context/ThemeContext";
 
 export default function Register() {
-  const { register, loading } = useContext(AuthContext);
+  const {
+    register,
+    loading,
+    authError,
+  } = useContext(AuthContext);
+
   const { theme, toggleTheme } = useContext(ThemeContext);
 
   const [formData, setFormData] = useState({
@@ -14,6 +19,7 @@ export default function Register() {
     email: "",
     password: "",
   });
+  const [registerError, setRegisterError] = useState("");
 
   const passwordRequirements = {
     length: formData.password.length >= 8,
@@ -34,13 +40,22 @@ export default function Register() {
     });
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+ const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    if (!passwordIsValid) return;
+  if (!passwordIsValid) return;
 
-    await register(formData);
-  };
+  setRegisterError("");
+
+  const result = await register(formData);
+
+  if (!result?.success) {
+    setRegisterError(
+      result?.message ||
+        "Unable to create account."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] transition-colors duration-200 dark:bg-[#0B1120] dark:text-[#F8FAFC]">
@@ -118,6 +133,30 @@ export default function Register() {
           </div>
 
           <div className="rounded-xl border border-[#E2E8F0] bg-white p-7 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827] dark:shadow-[0_10px_30px_rgba(0,0,0,0.25)] md:p-8">
+
+            {/* Registration error */}
+            {authError && (
+              <div className="mb-5 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 dark:border-[#991B1B] dark:bg-[#450A0A]/40">
+                <p className="text-sm font-semibold text-[#DC2626] dark:text-[#F87171]">
+                  Registration failed
+                </p>
+
+                <p className="mt-1 text-sm text-[#B91C1C] dark:text-[#FCA5A5]">
+                  {authError}
+                </p>
+              </div>
+            )}
+                {registerError && (
+                <div className="mb-5 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 dark:border-[#991B1B] dark:bg-[#450A0A]/40">
+                    <p className="text-sm font-semibold text-[#DC2626] dark:text-[#F87171]">
+                    Registration failed
+                    </p>
+
+                    <p className="mt-1 text-sm text-[#B91C1C] dark:text-[#FCA5A5]">
+                    {registerError}
+                    </p>
+                </div>
+                )}
             <form
               onSubmit={handleSubmit}
               className="space-y-5"

@@ -72,29 +72,45 @@ export default function AuthProvider({ children }) {
     }
   };
 
-  const register = async (body) => {
-    try {
-      setLoading(true);
+const register = async (body) => {
+  try {
+    setLoading(true);
 
-      const response = await api.post(
-        "/auth/register",
-        body
-      );
+    const response = await api.post(
+      "/auth/register",
+      body
+    );
 
-      if (response.status === 201) {
-        navigate("/login", {
-          replace: true,
-        });
-      }
-    } catch (error) {
-      console.error(
-        "Register error:",
-        error.response || error
-      );
-    } finally {
-      setLoading(false);
+    if (response.status === 201) {
+      navigate("/login", {
+        replace: true,
+      });
+
+      return {
+        success: true,
+      };
     }
-  };
+
+    return {
+      success: false,
+      message: "Unable to create account.",
+    };
+  } catch (error) {
+    console.error(
+      "Register error:",
+      error.response || error
+    );
+
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "Unable to create account. Please try again.",
+    };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const logout = () => {
     localStorage.removeItem(

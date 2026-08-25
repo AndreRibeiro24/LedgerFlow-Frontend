@@ -33,10 +33,28 @@ const emptyForm = {
     {
       description: "",
       quantity: 1,
-      unitPrice: 0,
+      unitPrice: "",
       taxRate: 23,
     },
   ],
+};
+
+const parseDecimal = (value) => {
+  if (
+    value === "" ||
+    value === null ||
+    value === undefined
+  ) {
+    return 0;
+  }
+
+  const parsedValue = Number(
+    String(value).replace(",", ".")
+  );
+
+  return Number.isFinite(parsedValue)
+    ? parsedValue
+    : 0;
 };
 
 export default function Invoices() {
@@ -160,6 +178,17 @@ export default function Invoices() {
     index,
     event
   ) => {
+    const { name, value } = event.target;
+
+    if (name === "unitPrice") {
+      const decimalRegex =
+        /^\d*[.,]?\d*$/;
+
+      if (!decimalRegex.test(value)) {
+        return;
+      }
+    }
+
     const updatedItems = [
       ...formData.items,
     ];
@@ -167,13 +196,11 @@ export default function Invoices() {
     updatedItems[index] = {
       ...updatedItems[index],
 
-      [event.target.name]:
-        event.target.name ===
-        "description"
-          ? event.target.value
-          : Number(
-              event.target.value
-            ),
+      [name]:
+        name === "description" ||
+        name === "unitPrice"
+          ? value
+          : Number(value),
     };
 
     setFormData({
@@ -192,7 +219,7 @@ export default function Invoices() {
         {
           description: "",
           quantity: 1,
-          unitPrice: 0,
+          unitPrice: "",
           taxRate: 23,
         },
       ],
@@ -226,9 +253,9 @@ export default function Invoices() {
             ) || 0;
 
           const unitPrice =
-            Number(
+            parseDecimal(
               item.unitPrice
-            ) || 0;
+            );
 
           const taxRate =
             Number(
@@ -458,8 +485,8 @@ export default function Invoices() {
                   1,
 
                 unitPrice:
-                  item.unitPrice ||
-                  0,
+                  item.unitPrice ??
+                  "",
 
                 taxRate:
                   item.taxRate ??
@@ -471,7 +498,7 @@ export default function Invoices() {
                 description:
                   "",
                 quantity: 1,
-                unitPrice: 0,
+                unitPrice: "",
                 taxRate: 23,
               },
             ],
@@ -1096,7 +1123,8 @@ export default function Invoices() {
                               <div className="xl:col-span-2">
                                 <InputField
                                   label="Unit Price"
-                                  type="number"
+                                  type="text"
+                                  inputMode="decimal"
                                   name="unitPrice"
                                   value={
                                     item.unitPrice
@@ -1109,8 +1137,7 @@ export default function Invoices() {
                                       event
                                     )
                                   }
-                                  min="0"
-                                  step="0.01"
+                                  placeholder="0,00"
                                   required
                                 />
                               </div>
