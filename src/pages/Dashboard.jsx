@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+
 import api from "../services/api";
 import Layout from "../components/Layout";
-import ExpensesByCategoryChart from "../components/ExpenseByCategoryChart";
+import ExpensesByCategoryChart from "../components/ExpensesByCategoryChart";
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
@@ -9,91 +10,48 @@ export default function Dashboard() {
   const [recentInvoices, setRecentInvoices] = useState([]);
   const [recentExpenses, setRecentExpenses] = useState([]);
   const [expensesByCategory, setExpensesByCategory] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getSummary = async () => {
-      try {
-        const response = await api.get("/dashboard/summary");
-        setSummary(response.data);
-      } catch (error) {
-        console.error("Get dashboard summary error:", error);
-      }
+      const response = await api.get("/dashboard/summary");
+      setSummary(response.data);
     };
 
     const getInvoiceStatus = async () => {
-      try {
-        const response = await api.get(
-          "/dashboard/invoice-status"
-        );
-
-        setInvoiceStatus(response.data);
-      } catch (error) {
-        console.error(
-          "Get invoice status error:",
-          error
-        );
-      }
+      const response = await api.get("/dashboard/invoice-status");
+      setInvoiceStatus(response.data);
     };
 
     const getRecentInvoices = async () => {
-      try {
-        const response = await api.get(
-          "/dashboard/recent-invoices"
-        );
-
-        setRecentInvoices(response.data);
-      } catch (error) {
-        console.error(
-          "Get recent invoices error:",
-          error
-        );
-      }
+      const response = await api.get("/dashboard/recent-invoices");
+      setRecentInvoices(response.data);
     };
 
     const getRecentExpenses = async () => {
-      try {
-        const response = await api.get(
-          "/dashboard/recent-expenses"
-        );
-
-        setRecentExpenses(response.data);
-      } catch (error) {
-        console.error(
-          "Get recent expenses error:",
-          error
-        );
-      }
+      const response = await api.get("/dashboard/recent-expenses");
+      setRecentExpenses(response.data);
     };
 
     const getExpensesByCategory = async () => {
-      try {
-        const response = await api.get(
-          "/dashboard/expenses-by-category"
-        );
-
-        setExpensesByCategory(response.data);
-      } catch (error) {
-        console.error(
-          "Get expenses by category error:",
-          error
-        );
-      }
+      const response = await api.get("/dashboard/expenses-by-category");
+      setExpensesByCategory(response.data);
     };
 
     const loadDashboard = async () => {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      await Promise.allSettled([
-        getSummary(),
-        getInvoiceStatus(),
-        getRecentInvoices(),
-        getRecentExpenses(),
-        getExpensesByCategory(),
-      ]);
-
-      setLoading(false);
+        await Promise.allSettled([
+          getSummary(),
+          getInvoiceStatus(),
+          getRecentInvoices(),
+          getRecentExpenses(),
+          getExpensesByCategory(),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadDashboard();
@@ -114,15 +72,15 @@ export default function Dashboard() {
     );
   };
 
-  if (loading && !summary) {
+  if (loading) {
     return (
       <Layout>
-        <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex min-h-[55vh] items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#DBEAFE] border-t-[#2563EB]" />
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[#DBEAFE] border-t-[#2563EB] dark:border-[#1E3A8A] dark:border-t-[#60A5FA]" />
 
-            <p className="text-sm text-[#64748B]">
-              Loading your financial overview...
+            <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+              Loading dashboard...
             </p>
           </div>
         </div>
@@ -133,301 +91,278 @@ export default function Dashboard() {
   if (!summary) {
     return (
       <Layout>
-        <div className="border border-[#E2E8F0] bg-white p-8 text-center">
-          <p className="font-semibold text-[#0F172A]">
+        <div className="border border-[#E2E8F0] bg-white p-8 text-center dark:border-[#243044] dark:bg-[#111827]">
+          <p className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
             Dashboard unavailable
           </p>
 
-          <p className="mt-2 text-sm text-[#64748B]">
-            We couldn't load your financial summary.
+          <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8]">
+            We couldn't load the dashboard information.
           </p>
         </div>
       </Layout>
     );
   }
 
-  const cards = [
-    {
-      label: "Revenue",
-      value: formatCurrency(summary.totalRevenue),
-      description: "Paid invoices",
-      accent: true,
-    },
-    {
-      label: "Profit",
-      value: formatCurrency(summary.profit),
-      description: "Revenue minus expenses",
-    },
-    {
-      label: "Expenses",
-      value: formatCurrency(
-        summary.totalExpensesAmount
-      ),
-      description: `${summary.totalExpenses} recorded`,
-    },
-    {
-      label: "Invoices",
-      value: summary.totalInvoices,
-      description: `${summary.totalClients} clients`,
-    },
-  ];
-
   return (
     <Layout>
-      {/* Page Header */}
-      <div className="mb-7">
-        <p className="text-sm font-semibold text-[#2563EB]">
-          Overview
-        </p>
+      {/* Header */}
+      <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-[#2563EB] dark:text-[#60A5FA]">
+            Overview
+          </p>
 
-        <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A]">
-              Dashboard
-            </h1>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC]">
+            Dashboard
+          </h1>
 
-            <p className="mt-1 text-sm text-[#64748B]">
-              A quick view of your business performance.
-            </p>
-          </div>
-
-          <p className="text-xs text-[#94A3B8]">
-            Revenue includes paid invoices only.
+          <p className="mt-1 text-sm text-[#64748B] dark:text-[#94A3B8]">
+            A quick view of your business performance.
           </p>
         </div>
+
+        <p className="text-xs text-[#94A3B8] dark:text-[#64748B]">
+          Revenue includes paid invoices only.
+        </p>
       </div>
 
-      {/* KPI Metrics */}
-      <section className="grid grid-cols-2 border-y border-[#E2E8F0] bg-white lg:grid-cols-4">
-        {cards.map((card, index) => (
-          <div
-            key={card.label}
-            className={`
-              relative px-5 py-5 sm:px-6
-              ${
-                index % 2 === 0
-                  ? "border-r border-[#E2E8F0]"
-                  : ""
-              }
-              ${
-                index < 2
-                  ? "border-b border-[#E2E8F0] lg:border-b-0"
-                  : ""
-              }
-              ${
-                index !== cards.length - 1
-                  ? "lg:border-r lg:border-[#E2E8F0]"
-                  : ""
-              }
-            `}
-          >
-            {card.accent && (
-              <span className="absolute left-0 top-5 h-8 w-1 bg-[#2563EB]" />
-            )}
+      {/* KPI Strip */}
+      <section className="mb-7 grid grid-cols-2 border-y border-[#E2E8F0] bg-white transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827] lg:grid-cols-4">
+        <KpiItem
+          label="Profit"
+          value={formatCurrency(summary.profit)}
+          description="Revenue minus expenses"
+          accent
+          negative={Number(summary.profit) < 0}
+        />
 
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#94A3B8]">
-              {card.label}
-            </p>
+        <KpiItem
+          label="Revenue"
+          value={formatCurrency(summary.totalRevenue)}
+          description="Paid invoices"
+        />
 
-            <p
-              className={`mt-3 text-2xl font-bold tracking-tight sm:text-3xl ${
-                card.accent
-                  ? "text-[#2563EB]"
-                  : "text-[#0F172A]"
-              }`}
-            >
-              {card.value}
-            </p>
+        <KpiItem
+          label="Expenses"
+          value={formatCurrency(summary.totalExpensesAmount)}
+          description={`${summary.totalExpenses || 0} recorded`}
+        />
 
-            <p className="mt-2 text-xs text-[#64748B]">
-              {card.description}
-            </p>
-          </div>
-        ))}
+        <KpiItem
+          label="Invoices"
+          value={summary.totalInvoices || 0}
+          description={`${summary.totalClients || 0} clients`}
+          last
+        />
       </section>
 
-      {/* Middle Section */}
-      <section className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-5">
-        {/* Expenses Chart */}
-        <div className="xl:col-span-3">
-          <div className="h-full border border-[#E2E8F0] bg-white p-5 sm:p-6">
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-[#0F172A]">
-                Expenses by Category
-              </p>
+      {/* Chart + Status */}
+      <div className="mb-7 grid grid-cols-1 gap-6 xl:grid-cols-5">
+        <section className="border border-[#E2E8F0] bg-white transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827] xl:col-span-3">
+          <div className="border-b border-[#E2E8F0] px-5 py-4 sm:px-6 dark:border-[#243044]">
+            <h2 className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+              Expenses by Category
+            </h2>
 
-              <p className="mt-1 text-xs text-[#94A3B8]">
-                How your business spending is distributed.
-              </p>
-            </div>
+            <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
+              How your business spending is distributed.
+            </p>
+          </div>
 
+          <div className="p-5 sm:p-6">
             <ExpensesByCategoryChart
-              expensesByCategory={
-                expensesByCategory
-              }
+              expensesByCategory={expensesByCategory}
             />
           </div>
-        </div>
+        </section>
 
-        {/* Invoice Status */}
-        <div className="xl:col-span-2">
-          <div className="h-full border border-[#E2E8F0] bg-white">
-            <div className="border-b border-[#E2E8F0] px-5 py-5 sm:px-6">
-              <p className="text-sm font-semibold text-[#0F172A]">
-                Invoice Status
-              </p>
+        <section className="border border-[#E2E8F0] bg-white transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827] xl:col-span-2">
+          <div className="border-b border-[#E2E8F0] px-5 py-4 sm:px-6 dark:border-[#243044]">
+            <h2 className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+              Invoice Status
+            </h2>
 
-              <p className="mt-1 text-xs text-[#94A3B8]">
-                Current invoice distribution.
-              </p>
-            </div>
-
-            {invoiceStatus ? (
-              <div>
-                <StatusRow
-                  label="Paid"
-                  value={invoiceStatus.paid}
-                  type="paid"
-                />
-
-                <StatusRow
-                  label="Pending"
-                  value={invoiceStatus.pending}
-                  type="pending"
-                />
-
-                <StatusRow
-                  label="Draft"
-                  value={invoiceStatus.draft}
-                  type="draft"
-                />
-
-                <StatusRow
-                  label="Overdue"
-                  value={invoiceStatus.overdue}
-                  type="overdue"
-                />
-
-                <StatusRow
-                  label="Cancelled"
-                  value={invoiceStatus.cancelled}
-                  type="cancelled"
-                  last
-                />
-              </div>
-            ) : (
-              <p className="p-6 text-sm text-[#94A3B8]">
-                No invoice status data available.
-              </p>
-            )}
+            <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
+              Current invoice distribution.
+            </p>
           </div>
-        </div>
-      </section>
+
+          <div>
+            <StatusRow
+              label="Paid"
+              value={invoiceStatus?.paid || 0}
+              dotClass="bg-[#16A34A]"
+              valueClass="text-[#16A34A] dark:text-[#4ADE80]"
+            />
+
+            <StatusRow
+              label="Pending"
+              value={invoiceStatus?.pending || 0}
+              dotClass="bg-[#2563EB]"
+              valueClass="text-[#2563EB] dark:text-[#60A5FA]"
+            />
+
+            <StatusRow
+              label="Draft"
+              value={invoiceStatus?.draft || 0}
+              dotClass="bg-[#94A3B8]"
+              valueClass="text-[#64748B] dark:text-[#94A3B8]"
+            />
+
+            <StatusRow
+              label="Overdue"
+              value={invoiceStatus?.overdue || 0}
+              dotClass="bg-[#D97706]"
+              valueClass="text-[#D97706] dark:text-[#FBBF24]"
+            />
+
+            <StatusRow
+              label="Cancelled"
+              value={invoiceStatus?.cancelled || 0}
+              dotClass="bg-[#DC2626]"
+              valueClass="text-[#DC2626] dark:text-[#F87171]"
+              last
+            />
+          </div>
+        </section>
+      </div>
 
       {/* Recent Activity */}
-      <section className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Recent Invoices */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <ActivityPanel
           title="Recent Invoices"
           subtitle="Latest invoices issued"
         >
           {recentInvoices.length === 0 ? (
-            <EmptyState text="No recent invoices." />
+            <EmptyState message="No recent invoices." />
           ) : (
-            recentInvoices.map((invoice) => (
-              <div
-                key={invoice._id}
-                className="flex items-center gap-4 border-b border-[#F1F5F9] px-5 py-4 last:border-b-0 sm:px-6"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[#0F172A]">
-                    {invoice.invoiceNumber}
-                  </p>
+            <div>
+              {recentInvoices.map((invoice) => (
+                <div
+                  key={invoice._id}
+                  className="flex items-center justify-between gap-4 border-b border-[#F1F5F9] px-5 py-4 transition last:border-b-0 hover:bg-[#F8FAFC] dark:border-[#243044] dark:hover:bg-[#172033] sm:px-6"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                      {invoice.invoiceNumber}
+                    </p>
 
-                  <p className="mt-1 text-xs text-[#94A3B8]">
-                    {formatDate(invoice.issueDate)}
-                  </p>
+                    <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
+                      {formatDate(invoice.issueDate)}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-4">
+                    <div className="hidden sm:block">
+                      <StatusBadge status={invoice.status} />
+                    </div>
+
+                    <p className="whitespace-nowrap text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                      {formatCurrency(invoice.total)}
+                    </p>
+                  </div>
                 </div>
-
-                <StatusBadge
-                  status={invoice.status}
-                />
-
-                <p className="w-24 text-right text-sm font-semibold text-[#0F172A]">
-                  {formatCurrency(invoice.total)}
-                </p>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </ActivityPanel>
 
-        {/* Recent Expenses */}
         <ActivityPanel
           title="Recent Expenses"
           subtitle="Latest business spending"
         >
           {recentExpenses.length === 0 ? (
-            <EmptyState text="No recent expenses." />
+            <EmptyState message="No recent expenses." />
           ) : (
-            recentExpenses.map((expense) => (
-              <div
-                key={expense._id}
-                className="flex items-center gap-4 border-b border-[#F1F5F9] px-5 py-4 last:border-b-0 sm:px-6"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-[#0F172A]">
-                    {expense.description}
-                  </p>
+            <div>
+              {recentExpenses.map((expense) => (
+                <div
+                  key={expense._id}
+                  className="flex items-center justify-between gap-4 border-b border-[#F1F5F9] px-5 py-4 transition last:border-b-0 hover:bg-[#F8FAFC] dark:border-[#243044] dark:hover:bg-[#172033] sm:px-6"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                      {expense.description}
+                    </p>
 
-                  <p className="mt-1 truncate text-xs text-[#94A3B8]">
-                    {expense.category} ·{" "}
-                    {formatDate(expense.date)}
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+                        {expense.category || "Uncategorized"}
+                      </span>
+
+                      <span className="text-xs text-[#CBD5E1] dark:text-[#475569]">
+                        •
+                      </span>
+
+                      <span className="text-xs text-[#94A3B8] dark:text-[#64748B]">
+                        {formatDate(expense.date)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="shrink-0 whitespace-nowrap text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                    {formatCurrency(expense.amount)}
                   </p>
                 </div>
-
-                <p className="text-sm font-semibold text-[#0F172A]">
-                  {formatCurrency(expense.amount)}
-                </p>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </ActivityPanel>
-      </section>
+      </div>
     </Layout>
   );
 }
 
-/* ------------------------------------------------ */
-/* Small Dashboard Components                       */
-/* ------------------------------------------------ */
-
-function ActivityPanel({
-  title,
-  subtitle,
-  children,
+function KpiItem({
+  label,
+  value,
+  description,
+  accent = false,
+  negative = false,
+  last = false,
 }) {
   return (
-    <div className="overflow-hidden border border-[#E2E8F0] bg-white">
-      <div className="border-b border-[#E2E8F0] px-5 py-5 sm:px-6">
-        <p className="text-sm font-semibold text-[#0F172A]">
-          {title}
-        </p>
+    <div
+      className={`
+        relative px-5 py-6 sm:px-6
+        ${
+          !last
+            ? "border-r border-[#E2E8F0] dark:border-[#243044]"
+            : ""
+        }
+        border-b border-[#E2E8F0] dark:border-[#243044]
+        lg:border-b-0
+      `}
+    >
+      {accent && (
+        <span
+          className={`absolute left-0 top-5 h-8 w-1 ${
+            negative
+              ? "bg-[#DC2626] dark:bg-[#F87171]"
+              : "bg-[#2563EB] dark:bg-[#3B82F6]"
+          }`}
+        />
+      )}
 
-        <p className="mt-1 text-xs text-[#94A3B8]">
-          {subtitle}
-        </p>
-      </div>
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#94A3B8] dark:text-[#64748B]">
+        {label}
+      </p>
 
-      <div>{children}</div>
-    </div>
-  );
-}
+      <p
+        className={`mt-4 text-2xl font-bold tracking-tight sm:text-3xl ${
+          negative
+            ? "text-[#DC2626] dark:text-[#F87171]"
+            : accent
+              ? "text-[#2563EB] dark:text-[#60A5FA]"
+              : "text-[#0F172A] dark:text-[#F8FAFC]"
+        }`}
+      >
+        {value}
+      </p>
 
-function EmptyState({ text }) {
-  return (
-    <div className="px-6 py-10 text-center">
-      <p className="text-sm text-[#94A3B8]">
-        {text}
+      <p className="mt-2 text-xs text-[#64748B] dark:text-[#94A3B8]">
+        {description}
       </p>
     </div>
   );
@@ -436,61 +371,65 @@ function EmptyState({ text }) {
 function StatusRow({
   label,
   value,
-  type,
-  last,
+  dotClass,
+  valueClass,
+  last = false,
 }) {
-  const styles = {
-    paid: {
-      dot: "bg-[#16A34A]",
-      text: "text-[#16A34A]",
-    },
-
-    pending: {
-      dot: "bg-[#2563EB]",
-      text: "text-[#2563EB]",
-    },
-
-    draft: {
-      dot: "bg-[#94A3B8]",
-      text: "text-[#64748B]",
-    },
-
-    overdue: {
-      dot: "bg-[#D97706]",
-      text: "text-[#D97706]",
-    },
-
-    cancelled: {
-      dot: "bg-[#DC2626]",
-      text: "text-[#DC2626]",
-    },
-  };
-
-  const style = styles[type];
-
   return (
     <div
       className={`flex items-center justify-between px-5 py-4 sm:px-6 ${
         last
           ? ""
-          : "border-b border-[#F1F5F9]"
+          : "border-b border-[#F1F5F9] dark:border-[#243044]"
       }`}
     >
       <div className="flex items-center gap-3">
         <span
-          className={`h-2.5 w-2.5 rounded-full ${style.dot}`}
+          className={`h-2.5 w-2.5 rounded-full ${dotClass}`}
         />
 
-        <span className="text-sm font-medium text-[#475569]">
+        <span className="text-sm font-medium text-[#475569] dark:text-[#CBD5E1]">
           {label}
         </span>
       </div>
 
       <span
-        className={`text-sm font-bold ${style.text}`}
+        className={`text-sm font-bold ${valueClass}`}
       >
-        {value ?? 0}
+        {value}
       </span>
+    </div>
+  );
+}
+
+function ActivityPanel({
+  title,
+  subtitle,
+  children,
+}) {
+  return (
+    <section className="overflow-hidden border border-[#E2E8F0] bg-white transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827]">
+      <div className="border-b border-[#E2E8F0] px-5 py-4 sm:px-6 dark:border-[#243044]">
+        <h2 className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+          {title}
+        </h2>
+
+        <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
+          {subtitle}
+        </p>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function EmptyState({ message }) {
+  return (
+    <div className="flex min-h-40 items-center justify-center p-6">
+      <p className="text-sm text-[#94A3B8] dark:text-[#64748B]">
+        {message}
+      </p>
     </div>
   );
 }
@@ -498,22 +437,26 @@ function StatusRow({
 function StatusBadge({ status }) {
   const styles = {
     paid:
-      "bg-[#F0FDF4] text-[#15803D]",
+      "bg-[#F0FDF4] text-[#15803D] dark:bg-[#052E16] dark:text-[#4ADE80]",
+
     pending:
-      "bg-[#EFF6FF] text-[#2563EB]",
+      "bg-[#EFF6FF] text-[#2563EB] dark:bg-[#172554] dark:text-[#60A5FA]",
+
     draft:
-      "bg-[#F1F5F9] text-[#64748B]",
+      "bg-[#F1F5F9] text-[#64748B] dark:bg-[#1E293B] dark:text-[#94A3B8]",
+
     overdue:
-      "bg-[#FFFBEB] text-[#B45309]",
+      "bg-[#FFFBEB] text-[#B45309] dark:bg-[#451A03] dark:text-[#FBBF24]",
+
     cancelled:
-      "bg-[#FEF2F2] text-[#DC2626]",
+      "bg-[#FEF2F2] text-[#DC2626] dark:bg-[#450A0A] dark:text-[#F87171]",
   };
 
   return (
     <span
-      className={`hidden rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize sm:inline ${
+      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
         styles[status] ||
-        "bg-[#F1F5F9] text-[#64748B]"
+        "bg-[#F1F5F9] text-[#64748B] dark:bg-[#1E293B] dark:text-[#94A3B8]"
       }`}
     >
       {status}

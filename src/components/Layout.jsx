@@ -1,10 +1,24 @@
 import { useContext, useState } from "react";
 import { NavLink } from "react-router-dom";
+
+import {
+  FiMenu,
+  FiX,
+  FiMoon,
+  FiSun,
+  FiLogOut,
+} from "react-icons/fi";
+
 import { AuthContext } from "../context/AuthContext";
+import { ThemeContext } from "../context/ThemeContext";
 
 export default function Layout({ children }) {
   const { user, logout } = useContext(AuthContext);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } =
+    useContext(ThemeContext);
+
+  const [mobileMenuOpen, setMobileMenuOpen] =
+    useState(false);
 
   const links = [
     {
@@ -25,297 +39,311 @@ export default function Layout({ children }) {
     },
   ];
 
-  const firstName = user?.name
-    ? user.name.split(" ")[0]
-    : "User";
+  const firstName =
+    user?.name?.split(" ")[0] || "User";
 
-  const userInitials = user?.name
+  const initials = user?.name
     ? user.name
         .split(" ")
         .slice(0, 2)
-        .map((name) => name[0])
+        .map((word) => word[0])
         .join("")
         .toUpperCase()
     : "U";
 
-  const handleLogout = () => {
+  const closeMobileMenu = () => {
     setMobileMenuOpen(false);
-    logout();
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] transition-colors duration-200 dark:bg-[#0B1120] dark:text-[#F8FAFC]">
+      {/* ========================================= */}
+      {/* Desktop Sidebar                           */}
+      {/* ========================================= */}
 
-      {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[#E2E8F0] bg-white lg:flex lg:flex-col">
-
-        {/* Logo */}
-        <div className="h-20 flex items-center px-7 border-b border-[#E2E8F0]">
-          <NavLink
-            to="/dashboard"
-            className="text-2xl font-bold tracking-tight"
-          >
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-[#E2E8F0] bg-white transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827] lg:flex">
+        {/* Brand */}
+        <div className="flex h-20 items-center border-b border-[#E2E8F0] px-6 dark:border-[#243044]">
+          <span className="text-xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC]">
             Ledger
-            <span className="text-[#2563EB]">
-              Flow
-            </span>
-          </NavLink>
+          </span>
+
+          <span className="text-xl font-bold tracking-tight text-[#2563EB] dark:text-[#60A5FA]">
+            Flow
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-7">
-
-          <p className="px-3 mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">
+        <nav className="flex-1 space-y-1 px-3 py-6">
+          <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8] dark:text-[#64748B]">
             Workspace
           </p>
 
-          <div className="space-y-1">
-            {links.map((link) => (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={({ isActive }) =>
-                  `
-                    relative flex items-center rounded-lg px-3 py-2.5
-                    text-sm font-medium transition
-                    ${
-                      isActive
-                        ? "bg-[#EFF6FF] text-[#2563EB]"
-                        : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                    }
-                  `
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <span className="absolute left-0 h-5 w-1 rounded-r bg-[#2563EB]" />
-                    )}
+          {links.map((link) => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              className={({ isActive }) =>
+                `relative flex items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? `
+                      bg-[#EFF6FF]
+                      text-[#2563EB]
+                      dark:bg-[#172554]/60
+                      dark:text-[#60A5FA]
+                    `
+                    : `
+                      text-[#64748B]
+                      hover:bg-[#F8FAFC]
+                      hover:text-[#0F172A]
+                      dark:text-[#94A3B8]
+                      dark:hover:bg-[#172033]
+                      dark:hover:text-[#F8FAFC]
+                    `
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute -left-3 h-6 w-0.5 rounded-r-full bg-[#2563EB] dark:bg-[#3B82F6]" />
+                  )}
 
-                    <span className="ml-2">
-                      {link.name}
-                    </span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
+                  {link.name}
+                </>
+              )}
+            </NavLink>
+          ))}
         </nav>
 
-        {/* Sidebar User */}
-        <div className="border-t border-[#E2E8F0] p-4">
-          <div className="flex items-center gap-3 px-2 py-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB]">
-              {userInitials}
+        {/* User */}
+        <div className="border-t border-[#E2E8F0] p-4 dark:border-[#243044]">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB] dark:bg-[#1E3A8A]/40 dark:text-[#93C5FD]">
+              {initials}
             </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[#0F172A]">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
                 {user?.name || "User"}
               </p>
 
-              <p className="truncate text-xs text-[#94A3B8]">
-                {user?.email || ""}
+              <p className="truncate text-xs text-[#94A3B8] dark:text-[#64748B]">
+                {user?.email || "Account"}
               </p>
             </div>
           </div>
 
           <button
-            onClick={handleLogout}
-            className="mt-1 w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-[#64748B] transition hover:bg-[#FEF2F2] hover:text-[#DC2626]"
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-[#FEF2F2] hover:text-[#DC2626] dark:text-[#94A3B8] dark:hover:bg-[#450A0A]/30 dark:hover:text-[#FCA5A5]"
           >
+            <FiLogOut size={16} />
+
             Sign out
           </button>
         </div>
       </aside>
 
-      {/* Main Application */}
-      <div className="lg:pl-64">
+      {/* ========================================= */}
+      {/* Main                                      */}
+      {/* ========================================= */}
 
+      <div className="min-h-screen lg:pl-64">
         {/* Topbar */}
-        <header className="sticky top-0 z-20 h-20 border-b border-[#E2E8F0] bg-white/95 backdrop-blur">
-          <div className="h-full flex items-center justify-between px-5 sm:px-7 lg:px-10">
-
-            {/* Mobile */}
-            <div className="flex items-center gap-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex h-20 items-center border-b border-[#E2E8F0] bg-white/95 px-4 backdrop-blur transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827]/95 sm:px-6 lg:px-8">
+          <div className="flex w-full items-center justify-between">
+            {/* Left */}
+            <div className="flex items-center gap-3">
+              {/* Mobile Menu */}
               <button
                 type="button"
                 onClick={() =>
                   setMobileMenuOpen(true)
                 }
                 aria-label="Open navigation"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E2E8F0] text-[#475569] transition hover:bg-[#F8FAFC]"
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#475569] transition hover:bg-[#F8FAFC] dark:border-[#334155] dark:bg-[#0F172A] dark:text-[#CBD5E1] dark:hover:bg-[#1E293B] lg:hidden"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M4 6h16" />
-                  <path d="M4 12h16" />
-                  <path d="M4 18h16" />
-                </svg>
+                <FiMenu size={19} />
               </button>
 
-              <NavLink
-                to="/dashboard"
-                className="text-xl font-bold tracking-tight"
-              >
-                Ledger
-                <span className="text-[#2563EB]">
-                  Flow
-                </span>
-              </NavLink>
-            </div>
-
-            {/* Desktop Greeting */}
-            <div className="hidden lg:block">
-              <p className="text-sm text-[#64748B]">
-                Welcome back,
-              </p>
-
-              <p className="font-semibold text-[#0F172A]">
-                {firstName}
-              </p>
-            </div>
-
-            {/* User Top Right */}
-            <div className="flex items-center gap-3">
-              <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-[#0F172A]">
-                  {user?.name || "User"}
+              {/* Desktop Greeting */}
+              <div className="hidden lg:block">
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
+                  Welcome back,
                 </p>
 
-                <p className="text-xs text-[#94A3B8]">
-                  Account
+                <p className="font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                  {firstName}
                 </p>
               </div>
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB]">
-                {userInitials}
+              {/* Mobile Branding */}
+              <div className="lg:hidden">
+                <span className="font-bold text-[#0F172A] dark:text-[#F8FAFC]">
+                  Ledger
+                </span>
+
+                <span className="font-bold text-[#2563EB] dark:text-[#60A5FA]">
+                  Flow
+                </span>
+              </div>
+            </div>
+
+            {/* Right */}
+            <div className="flex items-center gap-3">
+              {/* Theme Toggle */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={
+                  theme === "dark"
+                    ? "Switch to light mode"
+                    : "Switch to dark mode"
+                }
+                title={
+                  theme === "dark"
+                    ? "Light mode"
+                    : "Dark mode"
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#E2E8F0] bg-white text-[#475569] transition hover:bg-[#F8FAFC] hover:text-[#0F172A] dark:border-[#334155] dark:bg-[#0F172A] dark:text-[#CBD5E1] dark:hover:bg-[#1E293B] dark:hover:text-[#F8FAFC]"
+              >
+                {theme === "dark" ? (
+                  <FiSun size={18} />
+                ) : (
+                  <FiMoon size={18} />
+                )}
+              </button>
+
+              {/* Desktop Account */}
+              <div className="hidden items-center gap-3 sm:flex">
+                <div className="hidden text-right md:block">
+                  <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
+                    {user?.name || "User"}
+                  </p>
+
+                  <p className="text-xs text-[#94A3B8] dark:text-[#64748B]">
+                    Account
+                  </p>
+                </div>
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB] dark:bg-[#1E3A8A]/40 dark:text-[#93C5FD]">
+                  {initials}
+                </div>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="min-w-0">
-          <div className="mx-auto w-full max-w-[1600px] px-5 py-7 sm:px-7 lg:px-10 lg:py-9">
-            {children}
-          </div>
+        <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          {children}
         </main>
       </div>
 
-      {/* Mobile Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+      {/* ========================================= */}
+      {/* Mobile Drawer                             */}
+      {/* ========================================= */}
 
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop */}
           <button
             type="button"
             aria-label="Close navigation"
-            onClick={() =>
-              setMobileMenuOpen(false)
-            }
-            className="absolute inset-0 bg-[#0F172A]/30 backdrop-blur-[2px]"
+            onClick={closeMobileMenu}
+            className="absolute inset-0 bg-[#0F172A]/50 backdrop-blur-[2px] dark:bg-black/60"
           />
 
-          {/* Mobile Drawer */}
-          <aside className="relative flex h-full w-[280px] max-w-[85vw] flex-col bg-white shadow-xl">
+          {/* Drawer */}
+          <aside className="relative flex h-full w-[280px] max-w-[85vw] flex-col border-r border-[#E2E8F0] bg-white shadow-2xl transition-colors duration-200 dark:border-[#243044] dark:bg-[#111827]">
+            {/* Header */}
+            <div className="flex h-20 items-center justify-between border-b border-[#E2E8F0] px-5 dark:border-[#243044]">
+              <div>
+                <span className="text-xl font-bold tracking-tight text-[#0F172A] dark:text-[#F8FAFC]">
+                  Ledger
+                </span>
 
-            {/* Mobile Logo */}
-            <div className="h-20 flex items-center justify-between px-6 border-b border-[#E2E8F0]">
-              <NavLink
-                to="/dashboard"
-                onClick={() =>
-                  setMobileMenuOpen(false)
-                }
-                className="text-2xl font-bold tracking-tight"
-              >
-                Ledger
-                <span className="text-[#2563EB]">
+                <span className="text-xl font-bold tracking-tight text-[#2563EB] dark:text-[#60A5FA]">
                   Flow
                 </span>
-              </NavLink>
+              </div>
 
               <button
-                onClick={() =>
-                  setMobileMenuOpen(false)
-                }
+                type="button"
+                onClick={closeMobileMenu}
                 aria-label="Close navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-[#64748B] hover:bg-[#F8FAFC]"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-[#64748B] transition hover:bg-[#F8FAFC] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:bg-[#172033] dark:hover:text-[#F8FAFC]"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
+                <FiX size={20} />
               </button>
             </div>
 
-            {/* Mobile Navigation */}
-            <nav className="flex-1 px-4 py-7">
-              <p className="px-3 mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">
+            {/* Navigation */}
+            <nav className="flex-1 space-y-1 px-3 py-6">
+              <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8] dark:text-[#64748B]">
                 Workspace
               </p>
 
-              <div className="space-y-1">
-                {links.map((link) => (
-                  <NavLink
-                    key={link.path}
-                    to={link.path}
-                    onClick={() =>
-                      setMobileMenuOpen(false)
-                    }
-                    className={({ isActive }) =>
-                      `
-                        flex items-center rounded-lg px-4 py-3
-                        text-sm font-medium transition
-                        ${
-                          isActive
-                            ? "bg-[#EFF6FF] text-[#2563EB]"
-                            : "text-[#475569] hover:bg-[#F8FAFC]"
-                        }
-                      `
-                    }
-                  >
-                    {link.name}
-                  </NavLink>
-                ))}
-              </div>
+              {links.map((link) => (
+                <NavLink
+                  key={link.path}
+                  to={link.path}
+                  onClick={closeMobileMenu}
+                  className={({ isActive }) =>
+                    `relative flex items-center rounded-lg px-3 py-3 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? `
+                          bg-[#EFF6FF]
+                          text-[#2563EB]
+                          dark:bg-[#172554]/60
+                          dark:text-[#60A5FA]
+                        `
+                        : `
+                          text-[#64748B]
+                          hover:bg-[#F8FAFC]
+                          hover:text-[#0F172A]
+                          dark:text-[#94A3B8]
+                          dark:hover:bg-[#172033]
+                          dark:hover:text-[#F8FAFC]
+                        `
+                    }`
+                  }
+                >
+                  {link.name}
+                </NavLink>
+              ))}
             </nav>
 
             {/* Mobile User */}
-            <div className="border-t border-[#E2E8F0] p-4">
-              <div className="flex items-center gap-3 px-2 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB]">
-                  {userInitials}
+            <div className="border-t border-[#E2E8F0] p-4 dark:border-[#243044]">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-sm font-bold text-[#2563EB] dark:bg-[#1E3A8A]/40 dark:text-[#93C5FD]">
+                  {initials}
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">
+                  <p className="truncate text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
                     {user?.name || "User"}
                   </p>
 
-                  <p className="truncate text-xs text-[#94A3B8]">
-                    {user?.email || ""}
+                  <p className="truncate text-xs text-[#94A3B8] dark:text-[#64748B]">
+                    {user?.email || "Account"}
                   </p>
                 </div>
               </div>
 
               <button
-                onClick={handleLogout}
-                className="mt-2 w-full rounded-lg bg-[#FEF2F2] px-4 py-3 text-left text-sm font-semibold text-[#DC2626]"
+                type="button"
+                onClick={() => {
+                  closeMobileMenu();
+                  logout();
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-[#FEF2F2] hover:text-[#DC2626] dark:text-[#94A3B8] dark:hover:bg-[#450A0A]/30 dark:hover:text-[#FCA5A5]"
               >
+                <FiLogOut size={16} />
+
                 Sign out
               </button>
             </div>
