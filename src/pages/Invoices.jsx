@@ -556,18 +556,17 @@ export default function Invoices() {
   };
 
   const formatCurrency = (
-    value
-  ) => {
+    value,
+    currency = "EUR"
+    ) => {
     return new Intl.NumberFormat(
-      "pt-PT",
-      {
+        "pt-PT",
+        {
         style: "currency",
-        currency: "EUR",
-      }
-    ).format(
-      Number(value) || 0
-    );
-  };
+        currency,
+        }
+    ).format(Number(value) || 0);
+    };
 
   const formatDate = (value) => {
     if (!value) return "—";
@@ -726,7 +725,8 @@ export default function Invoices() {
 
                         <td className="px-6 py-4 text-right text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
                           {formatCurrency(
-                            invoice.total
+                            invoice.total,
+                            invoice.currency
                           )}
                         </td>
 
@@ -812,7 +812,8 @@ export default function Invoices() {
 
                         <p className="mt-1 font-bold text-[#0F172A] dark:text-[#F8FAFC]">
                           {formatCurrency(
-                            invoice.total
+                            invoice.total,
+                            invoice.currency
                           )}
                         </p>
                       </div>
@@ -1186,7 +1187,8 @@ export default function Invoices() {
                                     calculatedItems[
                                       index
                                     ]
-                                      ?.lineTotal
+                                      ?.lineTotal,
+                                      formData.currency
                                   )}
                                 </div>
                               </div>
@@ -1376,52 +1378,47 @@ export default function Invoices() {
                           Totals update automatically.
                         </p>
                       </div>
-
-                      <div className="space-y-4 p-5">
+                        <div className="space-y-4 p-5">
                         <SummaryRow
-                          label="Subtotal"
-                          value={formatCurrency(
-                            subtotal
-                          )}
+                            label="Subtotal"
+                            value={formatCurrency(
+                            subtotal,
+                            formData.currency
+                            )}
                         />
 
                         <SummaryRow
-                          label="VAT"
-                          value={formatCurrency(
-                            taxTotal
-                          )}
+                            label="VAT"
+                            value={formatCurrency(
+                            taxTotal,
+                            formData.currency
+                            )}
                         />
 
                         <div className="border-t border-[#E2E8F0] pt-4 dark:border-[#243044]">
-                          <div className="flex items-end justify-between gap-4">
+                            <div className="flex items-end justify-between gap-4">
                             <span className="text-sm font-semibold text-[#475569] dark:text-[#CBD5E1]">
-                              Total
+                                Total
                             </span>
 
                             <span className="text-2xl font-bold tracking-tight text-[#2563EB] dark:text-[#60A5FA]">
-                              {formatCurrency(
-                                total
-                              )}
+                                {formatCurrency(
+                                total,
+                                formData.currency
+                                )}
                             </span>
-                          </div>
+                            </div>
                         </div>
 
                         <div className="border-t border-[#F1F5F9] pt-4 text-xs leading-5 text-[#94A3B8] dark:border-[#243044] dark:text-[#64748B]">
-                          {
-                            formData
-                              .items
-                              .length
-                          }{" "}
-                          item
-                          {formData
-                            .items
-                            .length !==
-                          1
+                            {formData.items.length}{" "}
+                            item
+                            {formData.items.length !== 1
                             ? "s"
                             : ""}{" "}
-                          on this invoice.
+                            on this invoice.
                         </div>
-                      </div>
+                        </div>
                     </div>
                   </div>
                 </aside>
