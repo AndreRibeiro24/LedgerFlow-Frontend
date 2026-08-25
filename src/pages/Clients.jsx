@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import Layout from "../components/Layout";
 
+import ConfirmModal from "../components/ConfirmModal"
+
 const emptyForm = {
   name: "",
   email: "",
@@ -26,6 +28,9 @@ export default function Clients() {
 
   const [formData, setFormData] = useState(emptyForm);
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  
   const getClients = async () => {
     try {
       setLoading(true);
@@ -121,26 +126,43 @@ export default function Clients() {
     setFormOpen(true);
   };
 
-  const handleDelete = async (clientId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this client?"
+const handleDelete = (client) => {
+  setDeleteTarget(client);
+};
+
+const confirmDelete = async () => {
+  if (!deleteTarget?._id) {
+  setError("Invalid client selected.");
+  setDeleteTarget(null);
+  return;
+}
+
+  try {
+    setDeleting(true);
+    setError("");
+
+    await api.delete(`/clients/${deleteTarget._id}`);
+
+    setClients((currentClients) =>
+      currentClients.filter(
+        (client) => client._id !== deleteTarget._id
+      )
     );
 
-    if (!confirmed) return;
+    setDeleteTarget(null);
+  } catch (error) {
+    console.error("Delete client error:", error);
 
-    try {
-      await api.delete(`/clients/${clientId}`);
+    setError(
+      error.response?.data?.message ||
+        "Unable to delete client."
+    );
 
-      setClients((currentClients) =>
-        currentClients.filter(
-          (client) => client._id !== clientId
-        )
-      );
-    } catch (error) {
-      console.error("Delete client error:", error);
-      setError("Unable to delete client.");
-    }
-  };
+    setDeleteTarget(null);
+  } finally {
+    setDeleting(false);
+  }
+};
 
   return (
     <Layout>
@@ -275,7 +297,7 @@ export default function Clients() {
                           <button
                             type="button"
                             onClick={() =>
-                              handleDelete(client._id)
+                              handleDelete(client)
                             }
                             className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2] dark:text-[#F87171] dark:hover:bg-[#450A0A]/40"
                           >
@@ -332,7 +354,7 @@ export default function Clients() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleDelete(client._id)
+                        handleDelete(client)
                       }
                       className="rounded-md bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626] dark:bg-[#450A0A]/40 dark:text-[#F87171]"
                     >
@@ -486,6 +508,19 @@ export default function Clients() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Delete client?"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete ${deleteTarget.name}? All information associated with this client will be permanently removed.`
+            : ""
+        }
+        confirmLabel="Delete Client"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Layout>
   );
 }

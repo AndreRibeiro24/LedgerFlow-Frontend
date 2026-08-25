@@ -1,5 +1,6 @@
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import api from "../services/api";
 
 export const AuthContext = createContext();
@@ -8,20 +9,39 @@ export default function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("authUser");
+    const storedUser =
+      localStorage.getItem("authUser");
 
-    return storedUser
-      ? JSON.parse(storedUser)
-      : null;
+    if (!storedUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(storedUser);
+    } catch (error) {
+      console.error(
+        "Invalid stored user data:",
+        error
+      );
+
+      localStorage.removeItem("authUser");
+      localStorage.removeItem("authToken");
+
+      return null;
+    }
   });
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const login = async (body) => {
     try {
       setLoading(true);
 
-      const response = await api.post("/auth/login", body);
+      const response = await api.post(
+        "/auth/login",
+        body
+      );
 
       if (response.status === 200) {
         setUser(response.data.user);
@@ -33,10 +53,14 @@ export default function AuthProvider({ children }) {
 
         localStorage.setItem(
           "authUser",
-          JSON.stringify(response.data.user)
+          JSON.stringify(
+            response.data.user
+          )
         );
 
-        navigate("/dashboard");
+        navigate("/dashboard", {
+          replace: true,
+        });
       }
     } catch (error) {
       console.error(
@@ -58,7 +82,9 @@ export default function AuthProvider({ children }) {
       );
 
       if (response.status === 201) {
-        navigate("/login");
+        navigate("/login", {
+          replace: true,
+        });
       }
     } catch (error) {
       console.error(
@@ -71,12 +97,19 @@ export default function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser");
+    localStorage.removeItem(
+      "authToken"
+    );
+
+    localStorage.removeItem(
+      "authUser"
+    );
 
     setUser(null);
 
-    navigate("/login");
+    navigate("/login", {
+      replace: true,
+    });
   };
 
   return (

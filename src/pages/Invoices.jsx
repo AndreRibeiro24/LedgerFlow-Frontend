@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import Layout from "../components/Layout";
+import ConfirmModal from "../components/ConfirmModal";
 
 const emptyForm = {
   invoiceNumber: "",
@@ -61,6 +62,12 @@ export default function Invoices() {
 
   const [formData, setFormData] =
     useState(emptyForm);
+
+  const [deleteTarget, setDeleteTarget] =
+    useState(null);
+
+  const [deleting, setDeleting] =
+    useState(false);
 
   const getInvoices = async () => {
     try {
@@ -399,50 +406,41 @@ export default function Invoices() {
 
       billingDetails: {
         name:
-          invoice
-            .billingDetails
+          invoice.billingDetails
             ?.name || "",
 
         taxNumber:
-          invoice
-            .billingDetails
+          invoice.billingDetails
             ?.taxNumber || "",
 
         address:
-          invoice
-            .billingDetails
+          invoice.billingDetails
             ?.address || "",
 
         email:
-          invoice
-            .billingDetails
+          invoice.billingDetails
             ?.email || "",
       },
 
       issuerDetails: {
         name:
-          invoice
-            .issuerDetails
+          invoice.issuerDetails
             ?.name || "",
 
         taxNumber:
-          invoice
-            .issuerDetails
+          invoice.issuerDetails
             ?.taxNumber || "",
 
         address:
-          invoice
-            .issuerDetails
+          invoice.issuerDetails
             ?.address || "",
 
         email:
-          invoice
-            .issuerDetails
+          invoice.issuerDetails
             ?.email || "",
 
         iban:
-          invoice
-            .issuerDetails
+          invoice.issuerDetails
             ?.iban || "",
       },
 
@@ -483,19 +481,23 @@ export default function Invoices() {
     setFormOpen(true);
   };
 
-  const handleDelete = async (
-    invoiceId
-  ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this invoice?"
-      );
+  const handleDelete = (invoice) => {
+    setDeleteTarget(invoice);
+  };
 
-    if (!confirmed) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget?._id) {
+      setError("Invalid invoice selected.");
+      setDeleteTarget(null);
+      return;
+    }
 
     try {
+      setDeleting(true);
+      setError("");
+
       await api.delete(
-        `/invoices/${invoiceId}`
+        `/invoices/${deleteTarget._id}`
       );
 
       setInvoices(
@@ -503,9 +505,11 @@ export default function Invoices() {
           currentInvoices.filter(
             (invoice) =>
               invoice._id !==
-              invoiceId
+              deleteTarget._id
           )
       );
+
+      setDeleteTarget(null);
     } catch (error) {
       console.error(
         "Delete invoice error:",
@@ -513,8 +517,14 @@ export default function Invoices() {
       );
 
       setError(
-        "Unable to delete invoice."
+        error.response?.data
+          ?.message ||
+          "Unable to delete invoice."
       );
+
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -554,8 +564,7 @@ export default function Invoices() {
           </h1>
 
           <p className="mt-1 text-sm text-[#64748B] dark:text-[#94A3B8]">
-            Create, manage and
-            track your business
+            Create, manage and track your business
             invoices.
           </p>
         </div>
@@ -587,12 +596,8 @@ export default function Invoices() {
             </p>
 
             <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
-              {
-                invoices.length
-              }{" "}
-              invoice
-              {invoices.length !==
-              1
+              {invoices.length} invoice
+              {invoices.length !== 1
                 ? "s"
                 : ""}
             </p>
@@ -611,8 +616,7 @@ export default function Invoices() {
             </p>
 
             <p className="mt-2 text-sm text-[#64748B] dark:text-[#94A3B8]">
-              Create your first
-              invoice to start
+              Create your first invoice to start
               tracking revenue.
             </p>
 
@@ -628,6 +632,7 @@ export default function Invoices() {
           </div>
         ) : (
           <>
+            {/* Desktop */}
             <div className="hidden overflow-x-auto sm:block">
               <table className="w-full">
                 <thead className="bg-[#F8FAFC] dark:bg-[#0F172A]">
@@ -724,7 +729,7 @@ export default function Invoices() {
                               type="button"
                               onClick={() =>
                                 handleDelete(
-                                  invoice._id
+                                  invoice
                                 )
                               }
                               className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2] dark:text-[#F87171] dark:hover:bg-[#450A0A]/40"
@@ -740,6 +745,7 @@ export default function Invoices() {
               </table>
             </div>
 
+            {/* Mobile */}
             <div className="divide-y divide-[#E2E8F0] dark:divide-[#243044] sm:hidden">
               {invoices.map(
                 (invoice) => (
@@ -784,7 +790,7 @@ export default function Invoices() {
                         </p>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <ActionButton
                           onClick={() =>
                             navigate(
@@ -804,6 +810,18 @@ export default function Invoices() {
                         >
                           Edit
                         </ActionButton>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDelete(
+                              invoice
+                            )
+                          }
+                          className="rounded-md bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626] dark:bg-[#450A0A]/40 dark:text-[#F87171]"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -825,7 +843,6 @@ export default function Invoices() {
           />
 
           <div className="relative flex h-full w-full flex-col bg-[#F8FAFC] shadow-2xl transition-colors duration-200 dark:bg-[#0B1120] lg:h-[94vh] lg:max-w-7xl lg:rounded-xl">
-            {/* Header */}
             <header className="flex shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-5 py-4 transition-colors dark:border-[#243044] dark:bg-[#111827] sm:px-7">
               <div>
                 <p className="text-xs font-semibold text-[#2563EB] dark:text-[#60A5FA]">
@@ -980,7 +997,6 @@ export default function Invoices() {
                     </div>
                   </FormSection>
 
-                  {/* Items */}
                   <FormSection
                     number="02"
                     title="Invoice Items"
@@ -1115,40 +1131,20 @@ export default function Invoices() {
                                     )
                                   }
                                 >
-                                  <option
-                                    value={
-                                      0
-                                    }
-                                  >
-                                    0% —
-                                    Exempt
+                                  <option value={0}>
+                                    0% — Exempt
                                   </option>
 
-                                  <option
-                                    value={
-                                      6
-                                    }
-                                  >
-                                    6% —
-                                    Reduced
+                                  <option value={6}>
+                                    6% — Reduced
                                   </option>
 
-                                  <option
-                                    value={
-                                      13
-                                    }
-                                  >
-                                    13% —
-                                    Intermediate
+                                  <option value={13}>
+                                    13% — Intermediate
                                   </option>
 
-                                  <option
-                                    value={
-                                      23
-                                    }
-                                  >
-                                    23% —
-                                    Standard
+                                  <option value={23}>
+                                    23% — Standard
                                   </option>
                                 </SelectField>
                               </div>
@@ -1174,7 +1170,6 @@ export default function Invoices() {
                     </div>
                   </FormSection>
 
-                  {/* Billing */}
                   <FormSection
                     number="03"
                     title="Billing Details"
@@ -1240,7 +1235,6 @@ export default function Invoices() {
                     </div>
                   </FormSection>
 
-                  {/* Issuer */}
                   <FormSection
                     number="04"
                     title="Issuer Details"
@@ -1323,7 +1317,6 @@ export default function Invoices() {
                     </div>
                   </FormSection>
 
-                  {/* Notes */}
                   <FormSection
                     number="05"
                     title="Notes"
@@ -1344,20 +1337,16 @@ export default function Invoices() {
                   </FormSection>
                 </div>
 
-                {/* Summary */}
                 <aside>
                   <div className="xl:sticky xl:top-0">
                     <div className="border border-[#E2E8F0] bg-white transition-colors dark:border-[#243044] dark:bg-[#111827]">
                       <div className="border-b border-[#E2E8F0] p-5 dark:border-[#243044]">
                         <p className="text-sm font-semibold text-[#0F172A] dark:text-[#F8FAFC]">
-                          Invoice
-                          Summary
+                          Invoice Summary
                         </p>
 
                         <p className="mt-1 text-xs text-[#94A3B8] dark:text-[#64748B]">
-                          Totals
-                          update
-                          automatically.
+                          Totals update automatically.
                         </p>
                       </div>
 
@@ -1403,8 +1392,7 @@ export default function Invoices() {
                           1
                             ? "s"
                             : ""}{" "}
-                          on this
-                          invoice.
+                          on this invoice.
                         </div>
                       </div>
                     </div>
@@ -1413,7 +1401,6 @@ export default function Invoices() {
               </div>
             </form>
 
-            {/* Footer */}
             <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-[#E2E8F0] bg-white px-5 py-4 transition-colors dark:border-[#243044] dark:bg-[#111827] sm:px-7">
               <button
                 type="button"
@@ -1440,6 +1427,20 @@ export default function Invoices() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Delete invoice?"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete invoice ${deleteTarget.invoiceNumber}? This invoice will be permanently removed.`
+            : ""
+        }
+        confirmLabel="Delete Invoice"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Layout>
   );
 }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import Layout from "../components/Layout";
+import ConfirmModal from "../components/ConfirmModal";
 
 const emptyForm = {
   description: "",
@@ -25,6 +26,9 @@ export default function Expenses() {
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState(emptyForm);
+
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const getExpenses = async () => {
     try {
@@ -114,14 +118,11 @@ export default function Expenses() {
     setFormData({
       description: expense.description || "",
       amount: expense.amount || "",
-
       date: expense.date
         ? expense.date.split("T")[0]
         : "",
-
       category: expense.category || "",
-      paymentMethod:
-        expense.paymentMethod || "",
+      paymentMethod: expense.paymentMethod || "",
       notes: expense.notes || "",
     });
 
@@ -129,25 +130,44 @@ export default function Expenses() {
     setFormOpen(true);
   };
 
-  const handleDelete = async (expenseId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this expense?"
-    );
+  const handleDelete = (expense) => {
+    setDeleteTarget(expense);
+  };
 
-    if (!confirmed) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget?._id) {
+      setError("Invalid expense selected.");
+      setDeleteTarget(null);
+      return;
+    }
 
     try {
-      await api.delete(`/expenses/${expenseId}`);
+      setDeleting(true);
+      setError("");
+
+      await api.delete(
+        `/expenses/${deleteTarget._id}`
+      );
 
       setExpenses((currentExpenses) =>
         currentExpenses.filter(
-          (expense) => expense._id !== expenseId
+          (expense) =>
+            expense._id !== deleteTarget._id
         )
       );
+
+      setDeleteTarget(null);
     } catch (error) {
       console.error("Delete expense error:", error);
 
-      setError("Unable to delete expense.");
+      setError(
+        error.response?.data?.message ||
+          "Unable to delete expense."
+      );
+
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -321,9 +341,7 @@ export default function Expenses() {
                           <button
                             type="button"
                             onClick={() =>
-                              handleDelete(
-                                expense._id
-                              )
+                              handleDelete(expense)
                             }
                             className="rounded-md px-3 py-1.5 text-xs font-semibold text-[#DC2626] transition hover:bg-[#FEF2F2] dark:text-[#F87171] dark:hover:bg-[#450A0A]/40"
                           >
@@ -396,7 +414,7 @@ export default function Expenses() {
                     <button
                       type="button"
                       onClick={() =>
-                        handleDelete(expense._id)
+                        handleDelete(expense)
                       }
                       className="rounded-md bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626] dark:bg-[#450A0A]/40 dark:text-[#F87171]"
                     >
@@ -410,7 +428,7 @@ export default function Expenses() {
         )}
       </section>
 
-      {/* Modal */}
+      {/* Create / Edit Modal */}
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6">
           <button
@@ -556,6 +574,20 @@ export default function Expenses() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        title="Delete expense?"
+        message={
+          deleteTarget
+            ? `Are you sure you want to delete "${deleteTarget.description}"? This expense will be permanently removed from your records.`
+            : ""
+        }
+        confirmLabel="Delete Expense"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Layout>
   );
 }

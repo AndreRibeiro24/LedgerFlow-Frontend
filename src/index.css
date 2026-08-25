@@ -1,3 +1,27 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Interactive elements */
+button:not(:disabled),
+a[href],
+select,
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
+/* Disabled elements */
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+/* Checkboxes / radios and their labels */
+input[type="checkbox"],
+input[type="radio"],
+label[for] {
+  cursor: pointer;
+}
