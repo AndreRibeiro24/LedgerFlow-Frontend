@@ -515,7 +515,29 @@ LedgerFlow can be expanded with several additional features:
 - Invoice payment reminders
 - Additional dashboard analytics
 
----
+## 🤖 AI Usage
+
+AI-assisted tools were used during the development of LedgerFlow as a support resource, primarily **ChatGPT by OpenAI**.
+
+AI assistance was used for:
+
+- Project planning and breaking development work into smaller tasks
+- Reviewing application architecture and MERN project structure
+- Debugging React, Express, MongoDB, Mongoose, JWT, and API integration issues
+- Reviewing code and identifying potential bugs or edge cases
+- Suggesting improvements to validation and error handling
+- Assisting with input validation logic, including phone numbers, Tax / VAT numbers, IBAN validation, invoice dates, and duplicate records
+- Reviewing frontend components and responsive UI implementation
+- Helping resolve ESLint and code quality issues
+- Reviewing API routes and controller logic
+- Assisting with deployment troubleshooting and production checks
+- Improving technical documentation and README structure
+
+All AI-generated suggestions were **reviewed, adapted, integrated, and tested manually** before being included in the project.
+
+The author remained responsible for the project's architecture, implementation decisions, database design, feature selection, testing, debugging, Git workflow, and deployment.
+
+LedgerFlow does **not** include AI-generated functionality or depend on any AI service at runtime. AI was used exclusively as a development and learning support tool.
 
 ## 🎯 Project Goals
 
