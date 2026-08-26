@@ -25,3 +25,12 @@ input[type="radio"],
 label[for] {
   cursor: pointer;
 }
+
+/* Fix on Calendar Colour during Dark Mode*/ 
+input[type="date"] {
+  color-scheme: light;
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
