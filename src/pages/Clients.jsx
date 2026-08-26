@@ -87,13 +87,38 @@ export default function Clients() {
       setSaving(true);
       setError("");
 
+
+      if (!isValidPhone(formData.phone)) {
+          setError(
+            "Enter a valid phone number containing between 8 and 15 digits."
+          );
+
+          return;
+        }
+
+        if (!isValidTaxNumber(formData.taxNumber)) {
+          setError(
+            "Enter a valid Tax / VAT Number containing between 4 and 20 letters or digits."
+          );
+
+          return;
+        }
+
+        const payload = {
+          ...formData,
+          phone: normalizePhone(formData.phone),
+          taxNumber: normalizeTaxNumber(
+            formData.taxNumber
+          ),
+        };
+
       if (editingClient) {
         await api.put(
           `/clients/${editingClient._id}`,
-          formData
+          payload
         );
       } else {
-        await api.post("/clients", formData);
+        await api.post("/clients", payload);
       }
 
       closeForm();
@@ -162,6 +187,63 @@ const confirmDelete = async () => {
   } finally {
     setDeleting(false);
   }
+};
+
+const normalizePhone = (value) => {
+  const trimmedValue = value.trim();
+  const hasCountryCode = trimmedValue.startsWith("+");
+  const digits = trimmedValue.replace(/\D/g, "");
+
+  return hasCountryCode
+    ? `+${digits}`
+    : digits;
+};
+
+const isValidPhone = (value) => {
+  if (!value) return false;
+
+
+  const allowedCharacters =
+    /^\+?[0-9\s\-()]+$/;
+
+  if (!allowedCharacters.test(value)) {
+    return false;
+  }
+
+  const digits = value.replace(/\D/g, "");
+
+  return (
+    digits.length >= 8 &&
+    digits.length <= 15
+  );
+};
+
+const normalizeTaxNumber = (value) => {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[\s\-./]/g, "");
+};
+
+const isValidTaxNumber = (value) => {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  const allowedCharacters =
+    /^[A-Za-z0-9\s\-./]+$/;
+
+  if (!allowedCharacters.test(value)) {
+    return false;
+  }
+
+  const normalizedTaxNumber =
+    normalizeTaxNumber(value);
+
+  return (
+    normalizedTaxNumber.length >= 4 &&
+    normalizedTaxNumber.length <= 20
+  );
 };
 
   return (
@@ -436,20 +518,25 @@ const confirmDelete = async () => {
                   />
 
                   <InputField
-                    label="Phone"
+                    label="Phone Number"
+                    type="tel"
+                    inputMode="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="+351..."
+                    placeholder="+351 912 345 678"
+                    maxLength={22}
                     required
                   />
 
                   <InputField
-                    label="Tax Number"
+                    label="Tax / VAT Number"
                     name="taxNumber"
                     value={formData.taxNumber}
                     onChange={handleChange}
-                    placeholder="Tax identification number"
+                    placeholder="e.g. PT123456789"
+                    maxLength={24}
+                    autoCapitalize="characters"
                     required
                   />
 

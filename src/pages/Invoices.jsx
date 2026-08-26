@@ -56,6 +56,78 @@ const parseDecimal = (value) => {
     ? parsedValue
     : 0;
 };
+const normalizeIBAN = (value) => {
+  return value
+    .replace(/\s/g, "")
+    .toUpperCase();
+};
+
+const isValidIBAN = (value) => {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  const iban = normalizeIBAN(value);
+
+  if (
+    !/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(
+      iban
+    )
+  ) {
+    return false;
+  }
+
+  const rearranged =
+    iban.slice(4) + iban.slice(0, 4);
+
+  let remainder = 0;
+
+  for (const character of rearranged) {
+    const numericValue =
+      character >= "A" &&
+      character <= "Z"
+        ? String(
+            character.charCodeAt(0) - 55
+          )
+        : character;
+
+    for (const digit of numericValue) {
+      remainder =
+        (remainder * 10 + Number(digit)) %
+        97;
+    }
+  }
+
+  return remainder === 1;
+};
+const normalizeTaxNumber = (value) => {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[\s\-./]/g, "");
+};
+
+const isValidTaxNumber = (value) => {
+  if (!value || typeof value !== "string") {
+    return false;
+  }
+
+  const allowedCharacters =
+    /^[A-Za-z0-9\s\-./]+$/;
+
+  if (!allowedCharacters.test(value)) {
+    return false;
+  }
+
+  const normalizedTaxNumber =
+    normalizeTaxNumber(value);
+
+  return (
+    normalizedTaxNumber.length >= 4 &&
+    normalizedTaxNumber.length <= 20
+  );
+};
+
 
 export default function Invoices() {
   const navigate = useNavigate();
@@ -332,33 +404,74 @@ export default function Invoices() {
       setSaving(true);
       setError("");
 
+    if (
+        !isValidTaxNumber(
+        formData.billingDetails.taxNumber
+    )
+    ) {
+    setError(
+        "Enter a valid Billing Tax / VAT Number containing between 4 and 20 letters or digits."
+    );
+
+    return;
+    }
+
+    if (
+    !isValidTaxNumber(
+        formData.issuerDetails.taxNumber
+    )
+    ) {
+    setError(
+        "Enter a valid Issuer Tax / VAT Number containing between 4 and 20 letters or digits."
+    );
+
+    return;
+    }
+
+    if (
+    !isValidIBAN(
+        formData.issuerDetails.iban
+    )
+    ) {
+    setError(
+        "Enter a valid IBAN."
+    );
+
+    return;
+    }
+
       const payload = {
         ...formData,
+
+        billingDetails: {
+            ...formData.billingDetails,
+            taxNumber: normalizeTaxNumber(
+            formData.billingDetails.taxNumber
+            ),
+        },
+
+        issuerDetails: {
+            ...formData.issuerDetails,
+            taxNumber: normalizeTaxNumber(
+            formData.issuerDetails.taxNumber
+            ),
+            iban: normalizeIBAN(
+            formData.issuerDetails.iban
+            ),
+        },
 
         subtotal,
         taxTotal,
         total,
 
-        items:
-          calculatedItems.map(
-            (item) => ({
-              description:
-                item.description,
-
-              quantity:
-                item.quantity,
-
-              unitPrice:
-                item.unitPrice,
-
-              taxRate:
-                item.taxRate,
-
-              lineTotal:
-                item.lineTotal,
-            })
-          ),
-      };
+        items: calculatedItems.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            taxRate: item.taxRate,
+            lineTotal: item.lineTotal,
+        })),
+        };
 
       if (editingInvoice) {
         await api.put(
@@ -1210,63 +1323,42 @@ export default function Invoices() {
                     description="Information shown for the customer receiving the invoice."
                   >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <InputField
-                        label="Name"
-                        name="name"
-                        value={
-                          formData
-                            .billingDetails
-                            .name
-                        }
-                        onChange={
-                          handleBillingChange
-                        }
-                        required
-                      />
+                        <InputField
+                            label="Name"
+                            name="name"
+                            value={formData.billingDetails.name}
+                            onChange={handleBillingChange}
+                            required
+                        />
 
-                      <InputField
-                        label="Tax Number"
-                        name="taxNumber"
-                        value={
-                          formData
-                            .billingDetails
-                            .taxNumber
-                        }
-                        onChange={
-                          handleBillingChange
-                        }
-                        required
-                      />
+                        <InputField
+                            label="Tax / VAT Number"
+                            name="taxNumber"
+                            value={formData.billingDetails.taxNumber}
+                            onChange={handleBillingChange}
+                            placeholder="e.g. PT123456789"
+                            maxLength={24}
+                            autoCapitalize="characters"
+                            required
+                        />
 
-                      <InputField
-                        label="Email"
-                        type="email"
-                        name="email"
-                        value={
-                          formData
-                            .billingDetails
-                            .email
-                        }
-                        onChange={
-                          handleBillingChange
-                        }
-                        required
-                      />
+                        <InputField
+                            label="Email"
+                            type="email"
+                            name="email"
+                            value={formData.billingDetails.email}
+                            onChange={handleBillingChange}
+                            required
+                        />
 
-                      <InputField
-                        label="Address"
-                        name="address"
-                        value={
-                          formData
-                            .billingDetails
-                            .address
-                        }
-                        onChange={
-                          handleBillingChange
-                        }
-                        required
-                      />
-                    </div>
+                        <InputField
+                            label="Address"
+                            name="address"
+                            value={formData.billingDetails.address}
+                            onChange={handleBillingChange}
+                            required
+                        />
+                        </div>
                   </FormSection>
 
                   <FormSection
@@ -1290,18 +1382,15 @@ export default function Invoices() {
                       />
 
                       <InputField
-                        label="Tax Number"
+                        label="Tax / VAT Number"
                         name="taxNumber"
-                        value={
-                          formData
-                            .issuerDetails
-                            .taxNumber
-                        }
-                        onChange={
-                          handleIssuerChange
-                        }
+                        value={formData.issuerDetails.taxNumber}
+                        onChange={handleIssuerChange}
+                        placeholder="e.g. PT123456789"
+                        maxLength={24}
+                        autoCapitalize="characters"
                         required
-                      />
+                        />
 
                       <InputField
                         label="Email"
@@ -1334,18 +1423,14 @@ export default function Invoices() {
 
                       <div className="sm:col-span-2">
                         <InputField
-                          label="IBAN"
-                          name="iban"
-                          value={
-                            formData
-                              .issuerDetails
-                              .iban
-                          }
-                          onChange={
-                            handleIssuerChange
-                          }
-                          placeholder="PT50..."
-                          required
+                            label="IBAN"
+                            name="iban"
+                            value={formData.issuerDetails.iban}
+                            onChange={handleIssuerChange}
+                            placeholder="e.g. PT50 0002 0123..."
+                            maxLength={42}
+                            autoCapitalize="characters"
+                            required
                         />
                       </div>
                     </div>
