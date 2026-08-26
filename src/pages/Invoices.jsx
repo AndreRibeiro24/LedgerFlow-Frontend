@@ -895,7 +895,11 @@ export default function Invoices() {
                 ×
               </button>
             </header>
-
+            {error && (
+            <div className="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-[#7F1D1D] dark:bg-[#450A0A]/40 dark:text-[#FCA5A5] sm:mx-7">
+                {error}
+            </div>
+            )}
             <form
               id="invoice-form"
               onSubmit={handleSubmit}
