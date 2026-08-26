@@ -14,17 +14,32 @@ export default function Login() {
     password: "",
   });
 
+  const [loginError, setLoginError] = useState("");
+
   const handleChange = (event) => {
     setFormData({
       ...formData,
       [event.target.name]: event.target.value,
     });
+
+    if (loginError) {
+      setLoginError("");
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    await login(formData);
+    setLoginError("");
+
+    const result = await login(formData);
+
+    if (!result?.success) {
+      setLoginError(
+        result?.message ||
+          "Unable to sign in. Please try again."
+      );
+    }
   };
 
   return (
@@ -155,6 +170,16 @@ export default function Login() {
                   className="w-full rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-[#0F172A] outline-none transition placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:ring-3 focus:ring-blue-100 dark:border-[#334155] dark:bg-[#0F172A] dark:text-[#F8FAFC] dark:placeholder:text-[#64748B] dark:focus:border-[#3B82F6] dark:focus:ring-blue-950"
                 />
               </div>
+
+              {/* Login Error */}
+              {loginError && (
+                <div
+                  role="alert"
+                  className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+                >
+                  {loginError}
+                </div>
+              )}
 
               {/* Submit */}
               <button

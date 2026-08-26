@@ -33,44 +33,62 @@ export default function AuthProvider({ children }) {
 
   const [loading, setLoading] =
     useState(false);
+    
 
   const login = async (body) => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const response = await api.post(
-        "/auth/login",
-        body
+    const response = await api.post(
+      "/auth/login",
+      body
+    );
+
+    if (response.status === 200) {
+      setUser(response.data.user);
+
+      localStorage.setItem(
+        "authToken",
+        response.data.token
       );
 
-      if (response.status === 200) {
-        setUser(response.data.user);
-
-        localStorage.setItem(
-          "authToken",
-          response.data.token
-        );
-
-        localStorage.setItem(
-          "authUser",
-          JSON.stringify(
-            response.data.user
-          )
-        );
-
-        navigate("/dashboard", {
-          replace: true,
-        });
-      }
-    } catch (error) {
-      console.error(
-        "Login error:",
-        error.response || error
+      localStorage.setItem(
+        "authUser",
+        JSON.stringify(
+          response.data.user
+        )
       );
-    } finally {
-      setLoading(false);
+
+      navigate("/dashboard", {
+        replace: true,
+      });
+
+      return {
+        success: true,
+      };
     }
-  };
+
+    return {
+      success: false,
+      message: "Unable to sign in.",
+    };
+  } catch (error) {
+    console.error(
+      "Login error:",
+      error.response || error
+    );
+
+    return {
+      success: false,
+      message:
+        error.response?.data?.message ||
+        "Unable to sign in. Please try again.",
+    };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 const register = async (body) => {
   try {
