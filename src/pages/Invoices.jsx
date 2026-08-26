@@ -967,11 +967,12 @@ export default function Invoices() {
                         type="date"
                         name="dueDate"
                         value={
-                          formData.dueDate
+                            formData.dueDate
                         }
                         onChange={handleChange}
+                        min={formData.issueDate || undefined}
                         required
-                      />
+                        />
 
                       <SelectField
                         label="Status"
